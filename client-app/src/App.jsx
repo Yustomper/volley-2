@@ -1,3 +1,4 @@
+// App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
@@ -15,16 +16,14 @@ import Statistics from './pages/Statistics';
 import LiveScoreBoard from './components/LiveScoreBoard';
 import Login from './modules/auth/pages/Login';
 import Register from './modules/auth/pages/Register';
-
 import NotFound from './components/NotFound';
-// import VolleyballMatch from './modules/matches/components/VolleyballMatch';
 import MatchControl from './modules/matches/pages/MatchControl';
 
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <Router>
+    <Router>
+      <AuthProvider>
+        <ThemeProvider>
           <div className="flex flex-col min-h-screen">
             <Navbar />
             <main className="flex-grow">
@@ -43,9 +42,9 @@ function App() {
             </main>
           </div>
           <ToastContainer />
-        </Router>
-      </ThemeProvider>
-    </AuthProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

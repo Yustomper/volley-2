@@ -3,3 +3,4 @@ djangorestframework-authtoken
 python-dotenv
 psycopg2
 requests
+django-cors-headers

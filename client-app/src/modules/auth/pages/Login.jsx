@@ -1,10 +1,11 @@
+// client-app/src/modules/auth/pages/Login.jsx
 import React from 'react';
 import { useLogin } from '../hooks/useLogin';
 import { useTheme } from '../../../context/ThemeContext';
 import LoginForm from '../components/LoginForm';
 
 const Login = () => {
-  const { formData, setFormData, handleChange, handleSubmit } = useLogin();
+  const { formData, handleChange, handleSubmit } = useLogin();
   const { isDarkMode } = useTheme();
 
   return (
@@ -15,7 +16,6 @@ const Login = () => {
         </h2>
         <LoginForm
           formData={formData}
-          setFormData={setFormData}
           handleChange={handleChange}
           handleSubmit={handleSubmit}
           isDarkMode={isDarkMode}

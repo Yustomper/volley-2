@@ -1,7 +1,8 @@
+// src/context/AuthContext.jsx
 import React, { createContext, useState, useContext } from 'react';
 import axios from 'axios';
+import api from '../modules/auth/services/api';
 
-const API_URL = import.meta.env.VITE_BACKEND_API
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
@@ -17,7 +18,7 @@ export const AuthProvider = ({ children }) => {
     
     try {
       // Hacer una petición para obtener los datos del usuario
-      const response = await axios.get(`${API_URL}/api/auth/user/`);
+      const response = await api.getCurrentUser(); 
       const userData = response.data;
       
       localStorage.setItem('user', JSON.stringify(userData));
