@@ -1,28 +1,30 @@
-// src/services/api.js
+// src/modules/auth/services/api.js
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_BACKEND_API;
 
+const api = axios.create({
+  baseURL: API_URL,
+});
 
-// Función para crear una instancia de axios con el token
-const createAxiosInstance = () => {
-  const token = localStorage.getItem("token");
-  return axios.create({
-    baseURL: API_URL,
-    headers: token ? { Authorization: `Token ${token}` } : {},
-  });
+// Interceptor para mostrar la URL completa de cada solicitud
+api.interceptors.request.use((config) => {
+  // console.log("Solicitando a URL completa:", config.baseURL + config.url);
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
+
+export const setAuthToken = (token) => {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common['Authorization'];
+  }
 };
 
-const api = {
-  // Autenticación
-  login: (credentials) => axios.post(`${API_URL}/api/users/login/`, credentials),
-  register: (userData) => axios.post(`${API_URL}/api/users/register/`, userData),
-
-  logout: () => createAxiosInstance().post(`/api/users/logout/`),
-
-  // Usuario
-  getCurrentUser: () => createAxiosInstance().get(`/api/users/user/`),
-
-}
+export const removeAuthToken = () => {
+  delete api.defaults.headers.common['Authorization'];
+};
 
 export default api;

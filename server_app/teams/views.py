@@ -1,8 +1,11 @@
 # teams/views.py
 
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions, filters, status
+from rest_framework.response import Response
 from .models import Team, Player
 from .serializers import TeamSerializer, PlayerSerializer
+from django.db import transaction
+from django.shortcuts import get_object_or_404
 
 
 class TeamViewSet(viewsets.ModelViewSet):
@@ -10,14 +13,32 @@ class TeamViewSet(viewsets.ModelViewSet):
     serializer_class = TeamSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    # Agregar filtros de búsqueda, ordenamiento y paginación
+    # Filtros para búsqueda y ordenamiento
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'coach']
     ordering_fields = ['name', 'gender']
     ordering = ['name']
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+            serializer.save(created_by=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        with transaction.atomic():
+            serializer = self.get_serializer(
+                instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        # Elimina el equipo y sus jugadores en cascada automáticamente
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class PlayerViewSet(viewsets.ModelViewSet):
@@ -25,7 +46,7 @@ class PlayerViewSet(viewsets.ModelViewSet):
     serializer_class = PlayerSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    # Agregar filtros de búsqueda, ordenamiento y paginación
+    # Filtros para búsqueda y ordenamiento
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'team__name', 'position']
     ordering_fields = ['name', 'jersey_number', 'position']

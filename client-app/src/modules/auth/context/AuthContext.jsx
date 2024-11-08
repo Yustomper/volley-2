@@ -1,50 +1,54 @@
-import React, { createContext, useState, useContext } from 'react';
-import axios from 'axios';
+// src/modules/auth/context/AuthContext.jsx
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api, { setAuthToken, removeAuthToken } from '../services/api';
 
-const API_URL = import.meta.env.VITE_BACKEND_API
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
+  const navigate = useNavigate();
 
-  const login = async (newToken) => {
-    localStorage.setItem('token', newToken);
-    setToken(newToken);
-    
-    // Configurar el token para futuras peticiones
-    axios.defaults.headers.common['Authorization'] = `Token ${newToken}`;
-    
+  useEffect(() => {
+    if (token) {
+      setAuthToken(token);  // Configura el token en Axios al montarse el componente
+    }
+  }, [token]);
+
+  const login = async (credentials) => {
     try {
-      // Hacer una petición para obtener los datos del usuario
-      const response = await axios.get(`${API_URL}/api/users/user/`);
-      const userData = response.data;
+      const response = await api.login(credentials);
+      const { token, email, username, user_id } = response.data;
+
+      // Guardar token y datos del usuario en localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify({ email, username, user_id }));
       
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
+      setToken(token);
+      setUser({ email, username, user_id });
+      setAuthToken(token);  // Configura el token en Axios
     } catch (error) {
-      console.error('Error al obtener datos del usuario:', error);
+      throw error.response?.data?.error || 'Error en el inicio de sesión';
     }
   };
 
-  const registerSuccess = (newToken, userData) => {
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setToken(newToken);
-    setUser(userData);
-    axios.defaults.headers.common['Authorization'] = `Token ${newToken}`;
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
-    setUser(null);
-    delete axios.defaults.headers.common['Authorization'];
+  const logout = async () => {
+    try {
+      await api.logout();
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setToken(null);
+      setUser(null);
+      removeAuthToken();  // Remueve el token en Axios
+      navigate('/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, login, registerSuccess, logout }}>
+    <AuthContext.Provider value={{ token, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -57,3 +61,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export default AuthContext;

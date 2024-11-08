@@ -46,16 +46,28 @@ INSTALLED_APPS = [
     'teams',
     'tournaments',
     'matches',
-    
+
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True 
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    # Añade aquí otros orígenes que necesites
-]
+# Configuración de CORS
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+
+if not CORS_ALLOWED_ORIGINS[0]:
+    raise ValueError(
+        "CORS_ALLOWED_ORIGINS no está configurado en las variables de entorno.")
+
+
+# Agrega tus dominios permitidos
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+
+if not ALLOWED_HOSTS:
+    raise ValueError(
+        "Los ALLOWED_HOSTS no están configurados correctamente en las variables de entorno.")
+
+
 # settings.py
 
 REST_FRAMEWORK = {
@@ -120,6 +132,10 @@ DATABASES = {
         'DISABLE_SERVER_SIDE_CURSORS': True,
     }
 }
+
+if not all([DATABASES['default']['NAME'], DATABASES['default']['USER'], DATABASES['default']['PASSWORD'], DATABASES['default']['HOST']]):
+    raise ValueError(
+        "La configuración de la base de datos no está completa en las variables de entorno.")
 
 
 # Password validation
