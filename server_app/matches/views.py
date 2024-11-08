@@ -13,30 +13,61 @@ import requests
 
 
 class MatchListCreateView(generics.ListCreateAPIView):
-    queryset = Match.objects.all()
+    queryset = Match.objects.all().select_related('team_a', 'team_b', 'tournament')
     serializer_class = MatchSerializer
 
     def perform_create(self, serializer):
-        # Llama a la API de clima al crear el partido
+        # Guardamos el partido con los datos proporcionados
         match = serializer.save(status='upcoming')
-        lat, lon = 0, 0  # Sustituir con la latitud y longitud reales
-        clima_data = self.get_weather_data(lat, lon, match.scheduled_date)
+        # Obtenemos latitud, longitud y fecha
+        lat = serializer.validated_data.get('latitude', None)
+        lon = serializer.validated_data.get('longitude', None)
+        scheduled_date = serializer.validated_data.get('scheduled_date', None)
 
-        if clima_data:
-            match.weather_info = clima_data
-            match.save()
+        if lat is not None and lon is not None and scheduled_date is not None:
+            # Llamamos a la API de clima
+            clima_data = self.get_weather_data(lat, lon, scheduled_date)
+            if clima_data:
+                match.weather_info = clima_data
+                match.save()
 
     def get_weather_data(self, lat, lon, date):
-        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=temperature_2m"
-        response = requests.get(url)
+        # Formatear fecha para la API
+        date_str = date.strftime('%Y-%m-%d')
+        params = {
+            'latitude': lat,
+            'longitude': lon,
+            'hourly': 'temperature_2m,weathercode',
+            'start_date': date_str,
+            'end_date': date_str,
+            'timezone': 'auto'
+        }
+        url = "https://api.open-meteo.com/v1/forecast"
+        response = requests.get(url, params=params)
         if response.status_code == 200:
-            return response.json()
+            data = response.json()
+            # Obtener la hora del partido
+            hour = date.hour
+            # Ajustar el índice si es necesario
+            index = data['hourly']['time'].index(f"{date_str}T{hour:02d}:00")
+            # Obtener temperatura y código del clima
+            temperature = data['hourly']['temperature_2m'][index]
+            weather_code = data['hourly']['weathercode'][index]
+            # Mapear weather_code a una descripción si lo deseas
+            weather_info = {
+                'temperature': temperature,
+                'weather_code': weather_code
+            }
+            return weather_info
         return None
 
 
 class MatchDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Match.objects.prefetch_related(
-        'sets__performances').order_by('sets__set_number')  # Ordena sets por set_number
+    queryset = Match.objects.select_related(
+        'team_a', 'team_b', 'tournament'
+    ).prefetch_related(
+        'sets__performances__player'
+    ).order_by('sets__set_number')
     serializer_class = MatchDetailSerializer
 
 
@@ -125,15 +156,16 @@ class PlayerPerformanceView(APIView):
                 id=data['player_id']).team_id == Match.objects.get(id=match_id).team_a.id else 'B'
             points_to_subtract = data['points']
             if team == 'A':
-                set_instance.team_a_points = max(0, set_instance.team_a_points - points_to_subtract)
+                set_instance.team_a_points = max(
+                    0, set_instance.team_a_points - points_to_subtract)
             else:
-                set_instance.team_b_points = max(0, set_instance.team_b_points - points_to_subtract)
+                set_instance.team_b_points = max(
+                    0, set_instance.team_b_points - points_to_subtract)
             set_instance.save()
 
             return Response({"message": "Last performance entry rolled back successfully."}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 class SubstitutePlayerView(APIView):

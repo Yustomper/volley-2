@@ -1,3 +1,5 @@
+// client-app/src/modules/matches/components/match-summary/TeamShowSection.jsx
+
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Edit, Trash, Play, RefreshCcw } from 'lucide-react'

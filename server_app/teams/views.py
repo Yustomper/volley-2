@@ -1,6 +1,7 @@
 # teams/views.py
 
 from rest_framework import viewsets, permissions, filters, status
+from django_filters.rest_framework import DjangoFilterBackend 
 from rest_framework.response import Response
 from .models import Team, Player
 from .serializers import TeamSerializer, PlayerSerializer
@@ -13,11 +14,12 @@ class TeamViewSet(viewsets.ModelViewSet):
     serializer_class = TeamSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    # Filtros para búsqueda y ordenamiento
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    # Filtros para búsqueda, ordenamiento y filtrado
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend]
     search_fields = ['name', 'coach']
     ordering_fields = ['name', 'gender']
     ordering = ['name']
+    filterset_fields = ['gender']
 
     def perform_create(self, serializer):
             serializer.save(created_by=self.request.user)
