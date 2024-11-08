@@ -33,7 +33,15 @@ const matchesApi = {
   // Iniciar un partido
   startMatch: (matchId) => api.post(`/api/matches/${matchId}/start/`),
 
- 
+  getWeather: (latitude, longitude, scheduled_date) =>
+    api.get('/api/weather/', {
+      params: {
+        latitude,
+        longitude,
+        date: scheduled_date,
+      },
+    }),
+
 };
 
 export default matchesApi;
