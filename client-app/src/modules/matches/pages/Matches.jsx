@@ -22,7 +22,7 @@ const Matches = () => {
       const params = {
         page: pagination.page,
         search,
-        ordering: `${sortOrder === 'asc' ? '' : '-'}home_team__name`,
+        ordering: `${sortOrder === 'asc' ? '' : '-'}team_a__name`,
       };
       const response = await api.getMatches(params);
       
@@ -98,11 +98,16 @@ const Matches = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {matches.map((match) => (
           <div key={match.id} className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} p-6 rounded-xl shadow-lg`}>
+            <div className="mb-2">
+              <span className={`inline-block px-3 py-1 text-sm font-semibold ${isDarkMode ? 'bg-purple-600 text-white' : 'bg-orange-500 text-white'} rounded-full`}>
+                {match.tournament.name}
+            </span>
+            </div>          
             <h3 className={`text-2xl font-semibold mb-4 ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>
-              {match.home_team?.name} vs {match.away_team?.name}
+              {match.team_a?.name} vs {match.team_b?.name}
             </h3>
             <p className={`mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Fecha: {new Date(match.date).toLocaleString()}
+              Fecha: {new Date(match.scheduled_date).toLocaleString()}
             </p>
             <p className={`mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               Ubicación: {match.location}

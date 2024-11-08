@@ -25,8 +25,8 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
   const [gender, setGender] = useState('M');
   const [coach, setCoach] = useState('');
   const [staff, setStaff] = useState('');
-  const [players, setPlayers] = useState([{ name: '', jerseyNumber: '', position: '', is_starter: false , status: 'Active'}]);
-
+  const [players, setPlayers] = useState([{ name: '', jerseyNumber: '', position: '', is_starter: false, status: 'Active' }]);
+  const [numberErrors, setNumberErrors] = useState({});
   const titularCount = players.filter(player => player.is_starter).length;
 
   useEffect(() => {
@@ -36,7 +36,7 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
       setCoach(editingTeam.coach || '');
       setStaff(editingTeam.staff || '');
       setPlayers(editingTeam.players.map(player => ({
-        id: player.id, 
+        id: player.id,
         name: player.name,
         jerseyNumber: player.jersey_number,
         position: player.position || '',
@@ -54,10 +54,54 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
 
   const handlePlayerChange = (index, field, value) => {
     const newPlayers = [...players];
-    newPlayers[index][field] = value;
+
+    // Limpiar error previo para este índice
+    setNumberErrors(prev => ({ ...prev, [index]: null }));
+
+    if (field === 'jerseyNumber') {
+      // Si el valor está vacío, permitir borrar
+      if (value === '' || value === null) {
+        newPlayers[index][field] = '';
+        setPlayers(newPlayers);
+        return;
+      }
+
+      // Convertir a número y validar
+      const numberValue = parseInt(value, 10);
+
+      // Validar que sea positivo
+      if (numberValue < 0) {
+        setNumberErrors(prev => ({
+          ...prev,
+          [index]: 'El número debe ser positivo'
+        }));
+        return;
+      }
+
+      // Verificar si el número ya está en uso por otro jugador
+      const isDuplicate = players.some(
+        (player, playerIndex) =>
+          playerIndex !== index &&
+          player.jerseyNumber === numberValue &&
+          player.jerseyNumber !== '' // Ignorar campos vacíos
+      );
+
+      if (isDuplicate) {
+        setNumberErrors(prev => ({
+          ...prev,
+          [index]: 'Este número ya está en uso por otro jugador'
+        }));
+        return;
+      }
+
+      newPlayers[index][field] = numberValue;
+    } else {
+      // Para otros campos, mantener el comportamiento original
+      newPlayers[index][field] = value;
+    }
+
     setPlayers(newPlayers);
   };
-
   const handleAddPlayer = () => {
     if (players.length < 14) {
       setPlayers([...players, { name: '', jerseyNumber: '', position: '', is_starter: false, status: 'Active' }]);
@@ -99,7 +143,7 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
       <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 max-w-6xl w-full`}>
-        
+
         {/* Título y género */}
         <div className="flex justify-between items-center mb-6">
           <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-purple-400' : 'text-pink-600'}`}>
@@ -125,7 +169,7 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
           </div>
 
           <button onClick={onClose} className={`${isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-pink-500 hover:text-pink-700'}`}>
-            <IoClose  className="h-6 w-6" />
+            <IoClose className="h-6 w-6" />
           </button>
         </div>
 
@@ -201,14 +245,30 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
                   <label htmlFor={`jerseyNumber-${index}`} className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
                     Número
                   </label>
-                  <input
-                    id={`jerseyNumber-${index}`}
-                    type="text"
-                    placeholder="Número"
-                    className={`w-full p-2 mt-1 ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-pink-100 text-pink-800'} border ${isDarkMode ? 'border-gray-600' : 'border-pink-300'} rounded-lg focus:outline-none focus:border-purple-500`}
-                    value={player.jerseyNumber}
-                    onChange={(e) => handlePlayerChange(index, 'jerseyNumber',  parseInt(e.target.value, 10))}
-                  />
+                  <div className="relative">
+                    <input
+                      id={`jerseyNumber-${index}`}
+                      type="text"
+                      placeholder="Número"
+                      className={`w-full p-2 mt-1 ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-pink-100 text-pink-800'
+                        } border ${numberErrors[index]
+                          ? 'border-red-500'
+                          : isDarkMode
+                            ? 'border-gray-600'
+                            : 'border-pink-300'
+                        } rounded-lg focus:outline-none ${numberErrors[index]
+                          ? 'focus:border-red-500'
+                          : 'focus:border-purple-500'
+                        }`}
+                      value={player.jerseyNumber}
+                      onChange={(e) => handlePlayerChange(index, 'jerseyNumber', e.target.value)}
+                    />
+                    {numberErrors[index] && (
+                      <p className="absolute text-xs text-red-500 mt-1">
+                        {numberErrors[index]}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="w-1/4">
@@ -231,49 +291,49 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
                 </div>
 
                 <div className="w-20 flex flex-col items-center mb-2">
-          <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-            Titular
-          </label>
-                        <div className="mt-3"><Switch
-                                  checked={player.is_starter}
-                                  onChange={(checked) => {
-                                    if (!checked || titularCount < 6) {
-                                      handlePlayerChange(index, 'is_starter', checked);
-                                    } else {
-                                      alert('Solo puedes tener hasta 6 jugadores titulares.');
-                                    }
-                                  }}
-                                  className={`${player.is_starter ? 'bg-blue-600' : 'bg-gray-200' } relative inline-flex h-6 w-11 items-center rounded-full transition`}
-                                >
-                                  <span className="sr-only">Titular</span>
-                                  <span className={`${player.is_starter ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition`} />
-                                </Switch>
-              </div>
-                  
+                  <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                    Titular
+                  </label>
+                  <div className="mt-3"><Switch
+                    checked={player.is_starter}
+                    onChange={(checked) => {
+                      if (!checked || titularCount < 6) {
+                        handlePlayerChange(index, 'is_starter', checked);
+                      } else {
+                        alert('Solo puedes tener hasta 6 jugadores titulares.');
+                      }
+                    }}
+                    className={`${player.is_starter ? 'bg-blue-600' : 'bg-gray-200'} relative inline-flex h-6 w-11 items-center rounded-full transition`}
+                  >
+                    <span className="sr-only">Titular</span>
+                    <span className={`${player.is_starter ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition`} />
+                  </Switch>
+                  </div>
+
                 </div>
-             
+
                 <div className="w-1/4">
-          <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-            Estado
-          </label>
+                  <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                    Estado
+                  </label>
                   <select
-            value={player.status}
-            onChange={(e) => handlePlayerChange(index, 'status', e.target.value)}
-            className={`w-full p-2 mt-1 ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-pink-100 text-pink-800'} border ${isDarkMode ? 'border-gray-600' : 'border-pink-300'} rounded-lg focus:outline-none focus:border-purple-500`}
-          >
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              </div>
+                    value={player.status}
+                    onChange={(e) => handlePlayerChange(index, 'status', e.target.value)}
+                    className={`w-full p-2 mt-1 ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-pink-100 text-pink-800'} border ${isDarkMode ? 'border-gray-600' : 'border-pink-300'} rounded-lg focus:outline-none focus:border-purple-500`}
+                  >
+                    {STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
 
 
                 <div className="w-1/12 flex items-center justify-center">
                   <button onClick={() => handleRemovePlayer(index)} className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-pink-600 hover:text-pink-700'}`}>
-                    <IoClose  className="h-6 w-6" />
+                    <IoClose className="h-6 w-6" />
                   </button>
                 </div>
               </div>
@@ -281,36 +341,36 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
           ))}
         </div>
         <div className="flex flex-col items-center space-y-4 mt-6">
-            <button
-              onClick={handleAddPlayer}
-              className={`px-4 py-2 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-pink-500 hover:bg-pink-600'} text-white rounded-lg transition duration-300 flex items-center`}
-              disabled={players.length >= 14}
-            >
-              <BsPersonFillAdd className="h-5 w-5 mr-2" />
-              Agregar Jugador
-            </button>
+          <button
+            onClick={handleAddPlayer}
+            className={`px-4 py-2 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-pink-500 hover:bg-pink-600'} text-white rounded-lg transition duration-300 flex items-center`}
+            disabled={players.length >= 14}
+          >
+            <BsPersonFillAdd className="h-5 w-5 mr-2" />
+            Agregar Jugador
+          </button>
 
-            <button
-              onClick={handleSubmit}
-              className={`px-6 py-2 ${isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-pink-600 hover:bg-pink-700'} text-white rounded-lg transition duration-300 flex items-center`}
-            >
-              {editingTeam ? (
-                <>
-                  <span className="mr-2">Actualizar Equipo</span>
-                  <IoReloadOutline className="h-5 w-5" />
-                </>
-              ) : (
-                <>
-                  <span className="mr-2">Guardar Equipo</span>
-                  <IoCheckmarkOutline className="h-5 w-5" />
-                </>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={handleSubmit}
+            className={`px-6 py-2 ${isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-pink-600 hover:bg-pink-700'} text-white rounded-lg transition duration-300 flex items-center`}
+          >
+            {editingTeam ? (
+              <>
+                <span className="mr-2">Actualizar Equipo</span>
+                <IoReloadOutline className="h-5 w-5" />
+              </>
+            ) : (
+              <>
+                <span className="mr-2">Guardar Equipo</span>
+                <IoCheckmarkOutline className="h-5 w-5" />
+              </>
+            )}
+          </button>
+        </div>
 
-      
+
       </div>
-      
+
     </div>
   );
 };

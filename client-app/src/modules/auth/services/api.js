@@ -22,7 +22,9 @@ export const setAuthToken = (token) => {
     delete api.defaults.headers.common['Authorization'];
   }
 };
-
+api.login = (credentials) => api.post('/api/users/login/', credentials);
+api.register = (credentials) => api.post('/api/users/register/', credentials);
+api.logout = () => api.post('/api/users/logout/');
 export const removeAuthToken = () => {
   delete api.defaults.headers.common['Authorization'];
 };

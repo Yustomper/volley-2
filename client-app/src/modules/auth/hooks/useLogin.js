@@ -22,6 +22,7 @@ export function useLogin() {
             navigate('/');
         } catch (error) {
             toast.error(error);
+            throw error; // Re-lanzamos el error para que LoginForm pueda manejarlo
         }
     };
 

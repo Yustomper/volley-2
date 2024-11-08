@@ -32,8 +32,25 @@ const api = {
   // Nuevos métodos para el partido de voleibol
   startMatch: (matchId) => createAxiosInstance().post(`/api/matches/${matchId}/start/`),
   endMatch: (matchId) => createAxiosInstance().post(`/api/matches/${matchId}/end/`),
-  updateMatchScore: (matchId, data) => createAxiosInstance().patch(`/api/matches/${matchId}/update_score/`, data),
-  
+  updateScore: async (matchId, setNumber, playerId, pointType, undo = false) => {
+    try {
+      const data = {
+        set_number: setNumber,
+        player_id: playerId,
+        point_type: pointType
+      };
+
+      // Si es una reversión, agregar undo: true
+      if (undo) {
+        data.undo = true;
+      }
+
+      const response = await api.updateMatchScore(matchId, data);
+      return response.data;
+    } catch (error) {
+      throw new Error('Error al actualizar el puntaje');
+    }
+  },
   // Corregido aquí el método de performance para evitar dobles // en las rutas
   updatePlayerPerformance: (performanceId, data) =>
     createAxiosInstance().put(`/api/matches/performances/${performanceId}/`, data),
