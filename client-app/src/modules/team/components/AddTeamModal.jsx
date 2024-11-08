@@ -1,5 +1,6 @@
+// client-app/src/modules/team/components/AddTeamModal.jsx
 import React, { useState, useEffect } from 'react';
-import { IoClose } from "react-icons/io5";
+import { IoClose, IoReloadOutline, IoCheckmarkOutline } from "react-icons/io5";
 import { BsPersonFillAdd } from "react-icons/bs";
 import { useTheme } from '../../../context/ThemeContext';
 import { Switch } from '@headlessui/react';
@@ -12,30 +13,42 @@ const POSITION_OPTIONS = [
   { value: 'LI', label: 'Líbero' },
 ];
 
+const STATUS_OPTIONS = [
+  { value: 'Active', label: 'Activo' },
+  { value: 'Suspended', label: 'Suspendido' },
+  { value: 'Injured', label: 'Lesionado' },
+];
+
 const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
   const { isDarkMode } = useTheme();
   const [teamName, setTeamName] = useState('');
   const [gender, setGender] = useState('M');
-  const [players, setPlayers] = useState([{ name: '', jerseyNumber: '', position: '', isHolding: false }]);
+  const [coach, setCoach] = useState('');
+  const [staff, setStaff] = useState('');
+  const [players, setPlayers] = useState([{ name: '', jerseyNumber: '', position: '', is_starter: false , status: 'Active'}]);
 
-  // Contar el número de jugadores titulares
-  const titularCount = players.filter(player => player.isHolding).length;
-
+  const titularCount = players.filter(player => player.is_starter).length;
 
   useEffect(() => {
     if (editingTeam) {
       setTeamName(editingTeam.name);
       setGender(editingTeam.gender || 'M');
+      setCoach(editingTeam.coach || '');
+      setStaff(editingTeam.staff || '');
       setPlayers(editingTeam.players.map(player => ({
+        id: player.id, 
         name: player.name,
         jerseyNumber: player.jersey_number,
         position: player.position || '',
-        isHolding: player.is_holding || false,
+        is_starter: player.is_starter || false,
+        status: player.status || 'Active',
       })));
     } else {
       setTeamName('');
       setGender('M');
-      setPlayers([{ name: '', jerseyNumber: '', position: '', isHolding: false }]);
+      setCoach('');
+      setStaff('');
+      setPlayers([{ name: '', jerseyNumber: '', position: '', is_starter: false, status: 'Active' }]);
     }
   }, [editingTeam]);
 
@@ -47,7 +60,7 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
 
   const handleAddPlayer = () => {
     if (players.length < 14) {
-      setPlayers([...players, { name: '', jerseyNumber: '', position: '', isHolding: false }]);
+      setPlayers([...players, { name: '', jerseyNumber: '', position: '', is_starter: false, status: 'Active' }]);
     }
   };
 
@@ -64,11 +77,15 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
         id: editingTeam?.id,
         name: teamName,
         gender,
+        coach,
+        staff,
         players: players.map(player => ({
+          id: player.id,
           name: player.name,
           jersey_number: player.jerseyNumber,
           position: player.position,
-          is_holding: player.isHolding,
+          is_starter: player.is_starter,
+          status: player.status,
         })),
       });
       onClose();
@@ -81,7 +98,7 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 max-w-3xl w-full`}>
+      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 max-w-6xl w-full`}>
         
         {/* Título y género */}
         <div className="flex justify-between items-center mb-6">
@@ -127,17 +144,45 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
           />
         </div>
 
-        {/* Lista de jugadores con numeración y scroll */}
+        {/* Coach del equipo */}
+        <div className="mb-4">
+          <label htmlFor="coach" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+            Entrenador
+          </label>
+          <input
+            id="coach"
+            type="text"
+            placeholder="Nombre del entrenador"
+            className={`w-full p-3 mt-1 ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-pink-100 text-pink-800'} border ${isDarkMode ? 'border-gray-600' : 'border-pink-300'} rounded-lg focus:outline-none focus:border-purple-500`}
+            value={coach}
+            onChange={(e) => setCoach(e.target.value)}
+          />
+        </div>
+
+        {/* Staff del equipo */}
+        <div className="mb-4">
+          <label htmlFor="staff" className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+            Staff
+          </label>
+          <input
+            id="staff"
+            type="text"
+            placeholder="Ej: Asistente, Preparador físico, etc."
+            className={`w-full p-3 mt-1 ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-pink-100 text-pink-800'} border ${isDarkMode ? 'border-gray-600' : 'border-pink-300'} rounded-lg focus:outline-none focus:border-purple-500`}
+            value={staff}
+            onChange={(e) => setStaff(e.target.value)}
+          />
+        </div>
+
+        {/* Lista de jugadores */}
         <div className="max-h-72 overflow-y-auto mb-4">
           {players.map((player, index) => (
             <div key={index} className="mb-4">
               <div className="flex mb-4 items-center space-x-4">
-                {/* Número del jugador (automático) */}
                 <div className="w-1/12 text-center text-lg font-bold">
                   {index + 1}.
                 </div>
 
-                {/* Nombre del jugador */}
                 <div className="w-1/3">
                   <label htmlFor={`playerName-${index}`} className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
                     Nombre del Jugador
@@ -152,7 +197,6 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
                   />
                 </div>
 
-                {/* Número del jugador */}
                 <div className="w-1/6">
                   <label htmlFor={`jerseyNumber-${index}`} className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
                     Número
@@ -163,11 +207,10 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
                     placeholder="Número"
                     className={`w-full p-2 mt-1 ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-pink-100 text-pink-800'} border ${isDarkMode ? 'border-gray-600' : 'border-pink-300'} rounded-lg focus:outline-none focus:border-purple-500`}
                     value={player.jerseyNumber}
-                    onChange={(e) => handlePlayerChange(index, 'jerseyNumber', e.target.value)}
+                    onChange={(e) => handlePlayerChange(index, 'jerseyNumber',  parseInt(e.target.value, 10))}
                   />
                 </div>
 
-                {/* Posición */}
                 <div className="w-1/4">
                   <label htmlFor={`position-${index}`} className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
                     Posición
@@ -187,28 +230,47 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
                   </select>
                 </div>
 
-                 {/* Switch para titular/reserva */}
-                 <div className="w-1/6">
-                  <label className={`mb-3 block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                    Titular
-                  </label>
-                  <Switch
-                    checked={player.isHolding}
-                    onChange={(checked) => {
-                      if (!checked || titularCount < 6) {
-                        handlePlayerChange(index, 'isHolding', checked);
-                      } else {
-                        alert('Solo puedes tener hasta 6 jugadores titulares.');
-                      }
-                    }}
-                    className={`${player.isHolding ? 'bg-blue-600' : 'bg-gray-200'} relative inline-flex h-6 w-11 items-center rounded-full transition`}
-                  >
-                    <span className="sr-only">Titular</span>
-                    <span className={`${player.isHolding ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition`} />
-                  </Switch>
+                <div className="w-20 flex flex-col items-center mb-2">
+          <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+            Titular
+          </label>
+                        <div className="mt-3"><Switch
+                                  checked={player.is_starter}
+                                  onChange={(checked) => {
+                                    if (!checked || titularCount < 6) {
+                                      handlePlayerChange(index, 'is_starter', checked);
+                                    } else {
+                                      alert('Solo puedes tener hasta 6 jugadores titulares.');
+                                    }
+                                  }}
+                                  className={`${player.is_starter ? 'bg-blue-600' : 'bg-gray-200' } relative inline-flex h-6 w-11 items-center rounded-full transition`}
+                                >
+                                  <span className="sr-only">Titular</span>
+                                  <span className={`${player.is_starter ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition`} />
+                                </Switch>
+              </div>
+                  
                 </div>
+             
+                <div className="w-1/4">
+          <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+            Estado
+          </label>
+                  <select
+            value={player.status}
+            onChange={(e) => handlePlayerChange(index, 'status', e.target.value)}
+            className={`w-full p-2 mt-1 ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-pink-100 text-pink-800'} border ${isDarkMode ? 'border-gray-600' : 'border-pink-300'} rounded-lg focus:outline-none focus:border-purple-500`}
+          >
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              </div>
 
-                {/* Botón para eliminar jugador */}
+
+
                 <div className="w-1/12 flex items-center justify-center">
                   <button onClick={() => handleRemovePlayer(index)} className={`${isDarkMode ? 'text-red-400 hover:text-red-300' : 'text-pink-600 hover:text-pink-700'}`}>
                     <IoClose  className="h-6 w-6" />
@@ -218,25 +280,37 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
             </div>
           ))}
         </div>
+        <div className="flex flex-col items-center space-y-4 mt-6">
+            <button
+              onClick={handleAddPlayer}
+              className={`px-4 py-2 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-pink-500 hover:bg-pink-600'} text-white rounded-lg transition duration-300 flex items-center`}
+              disabled={players.length >= 14}
+            >
+              <BsPersonFillAdd className="h-5 w-5 mr-2" />
+              Agregar Jugador
+            </button>
 
-        {/* Botón para agregar jugador */}
-        <button
-          onClick={handleAddPlayer}
-          className={`w-full p-2 mb-4 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-pink-500 hover:bg-pink-600'} text-white rounded-lg transition duration-300 flex items-center justify-center`}
-          disabled={players.length >= 14}
-        >
-          <BsPersonFillAdd className="h-5 w-5 mr-2" />
-          Agregar Jugador
-        </button>
+            <button
+              onClick={handleSubmit}
+              className={`px-6 py-2 ${isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-pink-600 hover:bg-pink-700'} text-white rounded-lg transition duration-300 flex items-center`}
+            >
+              {editingTeam ? (
+                <>
+                  <span className="mr-2">Actualizar Equipo</span>
+                  <IoReloadOutline className="h-5 w-5" />
+                </>
+              ) : (
+                <>
+                  <span className="mr-2">Guardar Equipo</span>
+                  <IoCheckmarkOutline className="h-5 w-5" />
+                </>
+              )}
+            </button>
+          </div>
 
-        {/* Botón para guardar o actualizar */}
-        <button
-          onClick={handleSubmit}
-          className={`w-full p-3 ${isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-pink-600 hover:bg-pink-700'} text-white rounded-lg transition duration-300`}
-        >
-          {editingTeam ? 'Actualizar Equipo' : 'Guardar Equipo'}
-        </button>
+      
       </div>
+      
     </div>
   );
 };

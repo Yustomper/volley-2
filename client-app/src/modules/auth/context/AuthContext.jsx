@@ -1,5 +1,5 @@
-// client-app/src/modules/auth/context/AuthContext.jsx
-import React, { createContext, useState, useContext } from 'react';
+// src/modules/auth/context/AuthContext.jsx
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { setAuthToken, removeAuthToken } from '../services/api';
 
@@ -10,18 +10,24 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (token) {
+      setAuthToken(token);  // Configura el token en Axios al montarse el componente
+    }
+  }, [token]);
+
   const login = async (credentials) => {
     try {
       const response = await api.login(credentials);
       const { token, email, username, user_id } = response.data;
 
-      // Guarda el token y el usuario en localStorage
+      // Guardar token y datos del usuario en localStorage
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify({ email, username, user_id }));
       
       setToken(token);
       setUser({ email, username, user_id });
-      setAuthToken(token);  // Configura el token globalmente
+      setAuthToken(token);  // Configura el token en Axios
     } catch (error) {
       throw error.response?.data?.error || 'Error en el inicio de sesión';
     }
@@ -34,7 +40,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('user');
       setToken(null);
       setUser(null);
-      removeAuthToken();
+      removeAuthToken();  // Remueve el token en Axios
       navigate('/login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
@@ -55,3 +61,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export default AuthContext;

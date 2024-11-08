@@ -1,51 +1,16 @@
-// src/services/api.js
-import axios from "axios";
+// src/modules/team/services/teamService.js
 
-const API_URL = import.meta.env.VITE_BACKEND_API;
+import api from "../../auth/services/api";
 
-// Función para crear una instancia de axios con el token
-const createAxiosInstance = () => {
-  const token = localStorage.getItem("token");
-  return axios.create({
-    baseURL: API_URL,
-    headers: token ? { Authorization: `Token ${token}` } : {},
-  });
+const teamApi = {
+  getTeams: (params) => api.get(`/api/teams/`, { params }),
+  createTeam: (teamData) => api.post(`/api/teams/`, teamData),
+  updateTeam: (teamId, teamData) => api.put(`/api/teams/${teamId}/`, teamData),
+  deleteTeam: (teamId) => api.delete(`/api/teams/${teamId}/`),
+
+  // Para casos donde necesitemos gestionar jugadores individualmente
+  getPlayers: (params) => api.get(`/api/players/`, { params }),
+  deletePlayer: (playerId) => api.delete(`/api/players/${playerId}/`),
 };
 
-const api = {
-  // Equipos con paginación, búsqueda y ordenamiento
-  getTeams: ({ page = 1, search = "", ordering = "name" } = {}) =>
-    createAxiosInstance().get(`/api/teams/`, {
-      params: {
-        page,
-        search,
-        ordering,
-      },
-    }),
-  createTeam: (teamData) => createAxiosInstance().post(`/api/teams/`, teamData),
-  updateTeam: (teamId, teamData) =>
-    createAxiosInstance().put(`/api/teams/${teamId}/`, teamData),
-  deleteTeam: (teamId) => createAxiosInstance().delete(`/api/teams/${teamId}/`),
-
-  // Jugadores con paginación, búsqueda y ordenamiento
-  getPlayers: ({ page = 1, search = "", ordering = "name" } = {}) =>
-    createAxiosInstance().get(`/api/teams/players/`, {
-      params: {
-        page,
-        search,
-        ordering,
-      },
-    }),
-  createPlayer: (playerData) =>
-    createAxiosInstance().post(`/api/teams/players/`, playerData),
-  updatePlayer: (playerId, playerData) =>
-    createAxiosInstance().put(`/api/teams/players/${playerId}/`, playerData),
-  deletePlayer: (playerId) =>
-    createAxiosInstance().delete(`/api/teams/players/${playerId}/`),
-  removePlayerFromTeam: (teamId, playerId) =>
-    createAxiosInstance().delete(`/api/teams/${teamId}/remove-player/${playerId}/`),
-
-};
-
-
-export default api;
+export default teamApi;

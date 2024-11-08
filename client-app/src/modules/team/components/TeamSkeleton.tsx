@@ -1,3 +1,4 @@
+// client-app/src/modules/team/components/TeamSkeleton.tsx
 import React from 'react';
 import { useTheme } from '../../../context/ThemeContext';
 

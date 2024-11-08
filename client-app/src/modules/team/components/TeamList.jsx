@@ -1,8 +1,9 @@
+// client-app/src/modules/team/components/TeamList.jsx
 import React from 'react';
 import { PencilIcon, TrashIcon } from 'lucide-react';
 import EquiposSkeleton from './TeamSkeleton';
 import { useTheme } from '../../../context/ThemeContext';
-import { PiGenderFemaleFill, PiGenderMaleFill   } from 'react-icons/pi'; // Librería de íconos de FontAwesome
+import { PiGenderFemaleFill, PiGenderMaleFill } from 'react-icons/pi';
 
 export default function TeamList({ teams, loading, handleRemoveTeam, handleRemovePlayer, handleEditTeam }) {
   const { isDarkMode } = useTheme();
@@ -25,16 +26,26 @@ export default function TeamList({ teams, loading, handleRemoveTeam, handleRemov
             </h3>
             {/* Ícono de género del equipo */}
             {team.gender === 'F' ? (
-              <PiGenderFemaleFill className="text-pink-500 text-3xl " /> 
+              <PiGenderFemaleFill className="text-pink-500 text-3xl" />
             ) : (
-              <PiGenderMaleFill className="text-blue-500 text-3xl" /> 
+              <PiGenderMaleFill className="text-blue-500 text-3xl" />
             )}
           </div>
 
-          {/* Mostrar solo jugadores titulares (is_holding = true) */}
+          {/* Información del entrenador y staff */}
+          <div className="mb-4">
+            <p className="text-sm font-medium">
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Entrenador: </span>{team.coach}
+            </p>
+            <p className="text-sm">
+              <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Staff: </span>{team.staff}
+            </p>
+          </div>
+
+          {/* Mostrar solo jugadores titulares (is_starter = true) */}
           <ul className="space-y-3">
             {team.players
-              .filter(player => player.is_holding) // Filtrar jugadores titulares
+              .filter(player => player.is_starter) // Filtrar jugadores titulares
               .map((player) => (
                 <li key={player.id} className={`flex items-center justify-between space-x-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} p-2 rounded-lg`}>
                   <div className="flex items-center space-x-3">
@@ -57,7 +68,7 @@ export default function TeamList({ teams, loading, handleRemoveTeam, handleRemov
           </ul>
 
           <div className="mt-6 flex justify-end space-x-2">
-            {/* Al editar se mostrará la lista completa en el modal */}
+            {/* Botones de edición y eliminación de equipo */}
             <button
               onClick={() => handleEditTeam(team)}
               className={`${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-purple-600 hover:text-purple-700'} transition duration-300`}
