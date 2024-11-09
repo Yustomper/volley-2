@@ -1,4 +1,3 @@
-// src/modules/auth/context/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { setAuthToken, removeAuthToken } from '../services/api';
@@ -10,11 +9,43 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
   const navigate = useNavigate();
 
+  // Agregar este useEffect para verificar y reconfigurar el token al recargar
   useEffect(() => {
-    if (token) {
-      setAuthToken(token);  // Configura el token en Axios al montarse el componente
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setAuthToken(storedToken); // Reconfigura el token en Axios
+      
+      // Verifica si el usuario también está en localStorage
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+        setToken(storedToken);
+      }
     }
-  }, [token]);
+  }, []);
+
+  // Agregar interceptor para manejar errores de autenticación
+  useEffect(() => {
+    const interceptor = api.interceptors.response.use(
+      response => response,
+      error => {
+        if (error.response?.status === 401) {
+          // Token expirado o inválido
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setToken(null);
+          setUser(null);
+          removeAuthToken();
+          navigate('/login');
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      api.interceptors.response.eject(interceptor);
+    };
+  }, [navigate]);
 
   const login = async (credentials) => {
     try {

@@ -7,32 +7,49 @@ const api = axios.create({
   baseURL: API_URL,
 });
 
-// Interceptor para mostrar la URL completa de cada solicitud
+// Interceptor para configurar el token en cada solicitud
 api.interceptors.request.use((config) => {
-   console.log("Solicitando a URL completa:", config.baseURL + config.url);
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  console.log("Solicitando a URL completa:", config.baseURL + config.url);
   return config;
 }, (error) => {
   return Promise.reject(error);
 });
 
+// Interceptor para manejar errores de autorización
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Si el token no es válido o ha expirado, limpiar el almacenamiento
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Aquí podrías agregar una redirección a /login si lo deseas
+    }
+    return Promise.reject(error);
+  }
+);
 
 api.login = (credentials) => api.post('/api/users/login/', credentials);
 api.register = (credentials) => api.post('/api/users/register/', credentials);
 api.logout = () => api.post('/api/users/logout/');
-
 
 export const setAuthToken = (token) => {
   if (token) {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    localStorage.setItem('token', token);
   } else {
     delete api.defaults.headers.common['Authorization'];
+    localStorage.removeItem('token');
   }
 };
-api.login = (credentials) => api.post('/api/users/login/', credentials);
-api.register = (credentials) => api.post('/api/users/register/', credentials);
-api.logout = () => api.post('/api/users/logout/');
+
 export const removeAuthToken = () => {
   delete api.defaults.headers.common['Authorization'];
+  localStorage.removeItem('token');
 };
 
 export default api;
