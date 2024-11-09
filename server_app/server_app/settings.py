@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'django_filters',
     # Las apps que crearemos para el proyecto
     'users',
     'teams',

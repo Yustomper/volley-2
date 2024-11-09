@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import api from '../services/api';
+import geoService from '../services/geoService';
 
 const LiveScoreboard = ({ match }) => {
   const { isDarkMode } = useTheme();
@@ -43,7 +43,7 @@ const LiveScoreboard = ({ match }) => {
     }
 
     try {
-      await api.updateMatchScore(match.id, newScore);
+      await geoService.updateMatchScore(match.id, newScore);
     } catch (error) {
       console.error('Error updating match score:', error);
     }
@@ -56,7 +56,7 @@ const LiveScoreboard = ({ match }) => {
     setCurrentSet(currentSet + 1);
 
     try {
-      await api.updateMatchSets(match.id, newSets);
+      await geoService.updateMatchSets(match.id, newSets);
     } catch (error) {
       console.error('Error updating match sets:', error);
     }
@@ -64,7 +64,7 @@ const LiveScoreboard = ({ match }) => {
 
   const endMatch = async () => {
     try {
-      await api.updateMatch(match.id, { status: 'Finalizado', winner });
+      await geoService.updateMatch(match.id, { status: 'Finalizado', winner });
     } catch (error) {
       console.error('Error ending match:', error);
     }

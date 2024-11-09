@@ -1,31 +1,9 @@
-// src/services/api.js
+// src/services/geoService.js
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_BACKEND_API;
 const GEOCODING_API = 'https://geocoding-api.open-meteo.com/v1/search';
 
-// Función para crear una instancia de axios con el token
-const createAxiosInstance = () => {
-  const token = localStorage.getItem("token");
-  return axios.create({
-    baseURL: API_URL,
-    headers: token ? { Authorization: `Token ${token}` } : {},
-  });
-};
-
-const api = {
-
-  getTeams: ({ page = 1, search = "", ordering = "name" } = {}) =>
-    createAxiosInstance().get(`/api/teams/`, {
-      params: {
-        page,
-        search,
-        ordering,
-      },
-    }),
-
-  
-  getStatistics: () => axios.get(`${API_URL}/api/statistics/`),
+const geoService  = {
 
   // Búsqueda de ubicaciones con geocodificación
   searchLocations: async (query) => {
@@ -90,4 +68,4 @@ function getWeatherCondition(code) {
   return "Stormy";
 }
 
-export default api;
+export default geoService ;

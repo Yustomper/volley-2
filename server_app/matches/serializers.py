@@ -1,9 +1,22 @@
 # matches/serializers.py
 from rest_framework import serializers
 from .models import Match, PlayerPerformance, Set
-from teams.models import Player
+from teams.models import Player, Team  # Importamos Team
+from tournaments.models import Tournament  # Importamos Tournament
 
 # Serializador para rendimiento de un jugador en un set
+
+
+class TeamSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Team
+        fields = ['id', 'name']
+
+
+class TournamentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tournament
+        fields = ['id', 'name']
 
 
 class PlayerPerformanceDetailSerializer(serializers.ModelSerializer):
@@ -28,26 +41,44 @@ class SetDetailSerializer(serializers.ModelSerializer):
 # Serializador principal para el partido, incluyendo sets y rendimiento detallado
 class MatchDetailSerializer(serializers.ModelSerializer):
     sets = SetDetailSerializer(many=True, read_only=True)
+    team_a = TeamSerializer(read_only=True)
+    team_b = TeamSerializer(read_only=True)
+    tournament = TournamentSerializer(read_only=True)
 
     class Meta:
         model = Match
         fields = [
             'id', 'tournament', 'team_a', 'team_b', 'scheduled_date',
-            'location', 'status', 'start_time', 'end_time', 'team_a_sets_won', 'team_b_sets_won', 'sets'
+            'location', 'latitude', 'longitude', 'weather_info',
+            'status', 'start_time', 'end_time',
+            'team_a_sets_won', 'team_b_sets_won', 'sets'
         ]
-
 
 # Serializador básico de Match (por si necesitas uno más simple en otros endpoints)
+
+
 class MatchSerializer(serializers.ModelSerializer):
+    team_a_id = serializers.PrimaryKeyRelatedField(
+        queryset=Team.objects.all(), source='team_a', write_only=True)
+    team_b_id = serializers.PrimaryKeyRelatedField(
+        queryset=Team.objects.all(), source='team_b', write_only=True)
+    tournament_id = serializers.PrimaryKeyRelatedField(
+        queryset=Tournament.objects.all(), source='tournament', write_only=True)
+    team_a = TeamSerializer(read_only=True)
+    team_b = TeamSerializer(read_only=True)
+    tournament = TournamentSerializer(read_only=True)
+
     class Meta:
         model = Match
         fields = [
-            'id', 'tournament', 'team_a', 'team_b', 'scheduled_date',
-            'location', 'status', 'start_time', 'end_time', 'team_a_sets_won', 'team_b_sets_won'
+            'id', 'tournament_id', 'tournament', 'team_a_id', 'team_b_id', 'team_a', 'team_b',
+            'scheduled_date', 'location', 'latitude', 'longitude', 'status', 'start_time', 'end_time',
+            'team_a_sets_won', 'team_b_sets_won'
         ]
 
-
 # Serializador para registrar rendimiento de un jugador en un set específico
+
+
 class PlayerPerformanceSerializer(serializers.Serializer):
     player_id = serializers.IntegerField()
     points = serializers.IntegerField(default=0)

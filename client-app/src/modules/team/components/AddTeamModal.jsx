@@ -18,7 +18,25 @@ const STATUS_OPTIONS = [
   { value: 'Suspended', label: 'Suspendido' },
   { value: 'Injured', label: 'Lesionado' },
 ];
+const Toast = ({ message, type, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
 
+  const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+
+  return (
+    <div className={`fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center`}>
+      <span>{message}</span>
+      <button onClick={onClose} className="ml-4">
+        <IoClose className="h-5 w-5" />
+      </button>
+    </div>
+  );
+};
 const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
   const { isDarkMode } = useTheme();
   const [teamName, setTeamName] = useState('');
@@ -27,6 +45,7 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
   const [staff, setStaff] = useState('');
   const [players, setPlayers] = useState([{ name: '', jerseyNumber: '', position: '', is_starter: false, status: 'Active' }]);
   const [numberErrors, setNumberErrors] = useState({});
+  const [toast, setToast] = useState(null);
   const titularCount = players.filter(player => player.is_starter).length;
 
   useEffect(() => {
@@ -52,6 +71,66 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
     }
   }, [editingTeam]);
 
+  const resetForm = () => {
+    setTeamName('');
+    setGender('M');
+    setCoach('');
+    setStaff('');
+    setPlayers([{ name: '', jerseyNumber: '', position: '', is_starter: false, status: 'Active' }]);
+    setNumberErrors({});
+  };
+
+  const showToast = (message, type = 'error') => {
+    setToast({ message, type });
+  };
+
+  const validateForm = () => {
+    // Validar nombre del equipo
+    if (!teamName.trim()) {
+      showToast('El nombre del equipo es obligatorio');
+      return false;
+    }
+
+    // Validar número mínimo de jugadores
+    if (players.length < 6) {
+      showToast('Debe haber al menos 6 jugadores en el equipo');
+      return false;
+    }
+
+    // Validar titulares
+    if (titularCount !== 6) {
+      showToast('Debe haber exactamente 6 jugadores titulares');
+      return false;
+    }
+
+    // Validar campos obligatorios y posiciones de titulares
+    const hasInvalidPlayers = players.some((player, index) => {
+      if (!player.name || !player.jerseyNumber) {
+        showToast(`El jugador ${index + 1} tiene campos obligatorios vacíos`);
+        return true;
+      }
+      if (player.is_starter && !player.position) {
+        showToast(`El jugador titular ${index + 1} debe tener una posición asignada`);
+        return true;
+      }
+      return false;
+    });
+
+    if (hasInvalidPlayers) return false;
+
+    // Validar números de camiseta duplicados
+    const jerseyNumbers = new Set();
+    for (const player of players) {
+      if (jerseyNumbers.has(player.jerseyNumber)) {
+        showToast('Hay números de camiseta duplicados');
+        return false;
+      }
+      jerseyNumbers.add(player.jerseyNumber);
+    }
+
+    return true;
+  };
+
   const handlePlayerChange = (index, field, value) => {
     const newPlayers = [...players];
 
@@ -71,10 +150,7 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
 
       // Validar que sea positivo
       if (numberValue < 0) {
-        setNumberErrors(prev => ({
-          ...prev,
-          [index]: 'El número debe ser positivo'
-        }));
+        showToast('El número debe ser positivo');
         return;
       }
 
@@ -87,10 +163,7 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
       );
 
       if (isDuplicate) {
-        setNumberErrors(prev => ({
-          ...prev,
-          [index]: 'Este número ya está en uso por otro jugador'
-        }));
+        showToast('Este número ya está en uso por otro jugador');
         return;
       }
 
@@ -105,6 +178,8 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
   const handleAddPlayer = () => {
     if (players.length < 14) {
       setPlayers([...players, { name: '', jerseyNumber: '', position: '', is_starter: false, status: 'Active' }]);
+    } else {
+      showToast('No se pueden agregar más de 14 jugadores');
     }
   };
 
@@ -112,11 +187,13 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
     if (players.length > 6) {
       const newPlayers = players.filter((_, i) => i !== index);
       setPlayers(newPlayers);
+    } else {
+      showToast('El equipo debe tener al menos 6 jugadores');
     }
   };
 
   const handleSubmit = () => {
-    if (teamName && players.length >= 6 && players.every(player => player.name && player.jerseyNumber)) {
+    if (validateForm()) {
       onSubmit({
         id: editingTeam?.id,
         name: teamName,
@@ -132,9 +209,8 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
           status: player.status,
         })),
       });
+      showToast(editingTeam ? 'Equipo actualizado exitosamente' : 'Equipo creado exitosamente', 'success');
       onClose();
-    } else {
-      alert('Por favor, completa todos los campos obligatorios y asegúrate de tener al menos 6 jugadores');
     }
   };
 
@@ -142,6 +218,13 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-8 max-w-6xl w-full`}>
 
         {/* Título y género */}

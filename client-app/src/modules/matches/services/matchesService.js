@@ -2,7 +2,9 @@
 
 import api from "../../auth/services/api";
 
+
 const matchesApi = {
+
   // Obtener todos los partidos con filtros opcionales
   getMatches: (params) => api.get(`/api/matches/`, { params }),
 
@@ -33,7 +35,8 @@ const matchesApi = {
   // Iniciar un partido
   startMatch: (matchId) => api.post(`/api/matches/${matchId}/start/`),
 
- 
+  
+
 };
 
 export default matchesApi;

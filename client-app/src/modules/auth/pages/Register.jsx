@@ -1,3 +1,4 @@
+// client-app/src/modules/auth/pages/Register.jsx
 import React from 'react';
 import { useTheme } from '../../../context/ThemeContext';
 import useRegister from '../hooks/useRegister';

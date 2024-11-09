@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../../context/ThemeContext';
-import { Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, ChevronLeft, ChevronRight, Calendar, Clock, 
+  MapPin, Info,   Activity, CheckCircle, AlertTriangle, RefreshCw, HelpCircle 
+} from 'lucide-react';
 import api from '../services/matchesService';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import MatchFormModal  from '../components/match-summary/MatchFormModal';
+import { formatDateTime } from '../utils/dateFormatter'; // Importa el formateador de fechas
 
 const Matches = () => {
   const { isDarkMode } = useTheme();
@@ -96,43 +99,60 @@ const Matches = () => {
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {matches.map((match) => (
-          <div key={match.id} className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} p-6 rounded-xl shadow-lg`}>
-            <div className="mb-2">
-              <span className={`inline-block px-3 py-1 text-sm font-semibold ${isDarkMode ? 'bg-purple-600 text-white' : 'bg-orange-500 text-white'} rounded-full`}>
-                {match.tournament.name}
-            </span>
-            </div>          
-            <h3 className={`text-2xl font-semibold mb-4 ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>
-              {match.team_a?.name} vs {match.team_b?.name}
-            </h3>
-            <p className={`mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Fecha: {new Date(match.scheduled_date).toLocaleString()}
-            </p>
-            <p className={`mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Ubicación: {match.location}
-            </p>
-            <p className={`mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Estado: {
-                {
-                  'upcoming': 'Próximamente',
-                  'live': 'En vivo',
-                  'finished': 'Finalizado',
-                  'suspended': 'Suspendido',
-                  'rescheduled': 'Reprogramado'
-                }[match.status] || 'Desconocido'
-              }
-            </p>
-            <Link
-              to={`/match-details/${match.id}`}
-              className={`inline-block px-4 py-2 rounded ${
-                isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-orange-500 hover:bg-orange-600'
-              } text-white transition duration-300`}
-            >
-              Información
-            </Link>
-          </div>
-        ))}
+        {matches.map((match) => {
+          // Formatear la fecha y hora
+          const { date, time } = formatDateTime(match.scheduled_date);
+          // Mapear el estado a un ícono y texto
+          const statusMap = {
+            'upcoming': { text: 'Próximamente', icon: <Clock className="w-5 h-5 mr-2" /> },
+            'live': { text: 'En vivo', icon: <Activity className="w-5 h-5 mr-2" /> },
+            'finished': { text: 'Finalizado', icon: <CheckCircle className="w-5 h-5 mr-2" /> },
+            'suspended': { text: 'Suspendido', icon: <AlertTriangle className="w-5 h-5 mr-2" /> },
+            'rescheduled': { text: 'Reprogramado', icon: <RefreshCw className="w-5 h-5 mr-2" /> },
+          };
+          const statusInfo = statusMap[match.status] || { text: 'Desconocido', icon: <HelpCircle className="w-5 h-5 mr-2" /> };
+          return (
+            <div key={match.id} className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} p-6 rounded-xl shadow-lg`}>
+              {/* Badge del Torneo */}
+              <div className="mb-2">
+                <span className={`inline-block px-3 py-1 text-sm font-semibold ${isDarkMode ? 'bg-purple-600 text-white' : 'bg-orange-500 text-white'} rounded-full`}>
+                  {match.tournament?.name}
+                </span>
+              </div>
+              <h3 className={`text-2xl font-semibold mb-4 ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>
+                {match.team_a?.name} vs {match.team_b?.name}
+              </h3>
+              {/* Mostrar la fecha y hora con íconos */}
+              <p className={`mb-2 flex items-center ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <Calendar className="w-5 h-5 mr-2" />
+                Fecha: {date}
+              </p>
+              <p className={`mb-4 flex items-center ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <Clock className="w-5 h-5 mr-2" />
+                Hora: {time}
+              </p>
+               {/* Ubicación */}
+              <p className={`mb-4 flex items-center ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <MapPin className="w-5 h-5 mr-2" />
+                Ubicación: {match.location}
+              </p>
+              {/* Estado */}
+              <p className={`mb-4 flex items-center ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                {statusInfo.icon}
+                Estado: {statusInfo.text}
+              </p>
+              <Link
+                to={`/match-details/${match.id}`}
+                className={`inline-block px-4 py-2 rounded  ${
+                  isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-orange-500 hover:bg-orange-600'
+                } text-white transition duration-300 flex items-center w-30 justify-center`}
+              >
+                 <Info className="w-5 h-5 mr-2" />
+                Información
+              </Link>
+            </div>
+          );
+        })}
       </div>
     );
   };

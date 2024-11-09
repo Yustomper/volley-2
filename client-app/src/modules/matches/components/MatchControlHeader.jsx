@@ -1,6 +1,6 @@
 // MatchHeader.jsx
 import React from 'react';
-import { formatDuration } from '../utils/formatDuration';
+import { formatDuration } from '../utils/format';
 
 const MatchControlHeader = ({ match, currentSet, currentSetDuration, homeSetsWon, awaySetsWon }) => {
   return (

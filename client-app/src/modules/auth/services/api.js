@@ -9,11 +9,17 @@ const api = axios.create({
 
 // Interceptor para mostrar la URL completa de cada solicitud
 api.interceptors.request.use((config) => {
-  // console.log("Solicitando a URL completa:", config.baseURL + config.url);
+   console.log("Solicitando a URL completa:", config.baseURL + config.url);
   return config;
 }, (error) => {
   return Promise.reject(error);
 });
+
+
+api.login = (credentials) => api.post('/api/users/login/', credentials);
+api.register = (credentials) => api.post('/api/users/register/', credentials);
+api.logout = () => api.post('/api/users/logout/');
+
 
 export const setAuthToken = (token) => {
   if (token) {

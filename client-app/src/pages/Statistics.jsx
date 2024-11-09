@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import api from '../services/api';
+import geoService from '../services/geoService';
 
 const Statistics = () => {
   const { isDarkMode } = useTheme();
@@ -19,7 +19,7 @@ const Statistics = () => {
   const fetchStatistics = async () => {
     try {
       setLoading(true);
-      const response = await api.getStatistics();
+      const response = await geoService.getStatistics();
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching statistics:', error);

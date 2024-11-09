@@ -21,7 +21,11 @@ class Match(models.Model):
     team_b = models.ForeignKey(
         Team, on_delete=models.CASCADE, related_name="matches_as_team_b")
     scheduled_date = models.DateTimeField()
-    location = models.CharField(max_length=200)
+    scheduled_date = models.DateTimeField()
+    location = models.CharField(max_length=255)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    weather_info = models.JSONField(null=True, blank=True)
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default='upcoming')
     start_time = models.DateTimeField(null=True, blank=True)
