@@ -47,6 +47,7 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
   const [numberErrors, setNumberErrors] = useState({});
   const [toast, setToast] = useState(null);
   const titularCount = players.filter(player => player.is_starter).length;
+  
 
   useEffect(() => {
     if (editingTeam) {
@@ -214,7 +215,11 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
     }
   };
 
+  
+   
   if (!open) return null;
+
+  
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
@@ -453,6 +458,7 @@ const AddTeamModal = ({ open, onClose, onSubmit, editingTeam }) => {
 
 
       </div>
+    
 
     </div>
   );
