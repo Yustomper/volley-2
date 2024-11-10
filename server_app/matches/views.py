@@ -10,6 +10,7 @@ from .serializers import (
 )
 from teams.models import Player
 import requests
+from django.shortcuts import get_object_or_404
 
 
 class MatchListCreateView(generics.ListCreateAPIView):
@@ -63,13 +64,37 @@ class MatchListCreateView(generics.ListCreateAPIView):
 
 
 class MatchDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Match.objects.select_related(
-        'team_a', 'team_b', 'tournament'
-    ).prefetch_related(
-        'sets__performances__player'
-    ).order_by('sets__set_number')
     serializer_class = MatchDetailSerializer
+    
+    def get_object(self):
+        queryset = Match.objects.select_related(
+            'team_a',
+            'team_b',
+            'tournament'
+        ).prefetch_related(
+            'sets',
+            'sets__performances',
+            'sets__performances__player',
+            'team_a__players',
+            'team_b__players'
+        )
+        
+        # Obtener el objeto usando el lookup_field
+        obj = get_object_or_404(queryset, pk=self.kwargs["pk"])
+        self.check_object_permissions(self.request, obj)
+        return obj
 
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+        except Exception as e:
+            print(f"Error detallado en MatchDetailView: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class StartMatchView(APIView):
     def post(self, request, match_id):

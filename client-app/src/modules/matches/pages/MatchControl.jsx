@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { FaStop, FaPlay, FaForward } from 'react-icons/fa';
 import matchesService from '../services/matchesService';
@@ -23,12 +23,76 @@ const MatchControl = () => {
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [currentSetDuration, setCurrentSetDuration] = useState(0);
 
-  // Efecto para cargar los datos iniciales del partido
-  useEffect(() => {
-    fetchMatchDetails();
+  const fetchMatchDetails = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await matchesService.getMatch(matchId);
+      
+      if (!response?.data) {
+        throw new Error('No se recibieron datos del partido');
+      }
+
+      const matchData = response.data;
+      
+      const processTeamData = (teamData) => {
+        if (!teamData || !Array.isArray(teamData.players)) {
+          return { players: [], positions: Array(6).fill(null) };
+        }
+
+        const titulares = teamData.players
+          .filter(player => player && player.is_starter)
+          .map(player => ({
+            id: player.id,
+            name: player.name,
+            jersey_number: player.jersey_number,
+            position: player.position,
+            is_starter: true
+          }));
+
+        const positions = Array(6).fill(null).map((_, index) => {
+          return titulares[index] || null;
+        });
+
+        return {
+          players: teamData.players,
+          positions: positions
+        };
+      };
+
+      const homeTeam = processTeamData(matchData.team_a);
+      const awayTeam = processTeamData(matchData.team_b);
+
+      setMatch(prevMatch => ({
+        ...matchData,
+        home_team: {
+          ...matchData.team_a,
+          players: homeTeam.players
+        },
+        away_team: {
+          ...matchData.team_b,
+          players: awayTeam.players
+        },
+        home_positions: homeTeam.positions,
+        away_positions: awayTeam.positions,
+        home_score: matchData.team_a_sets_won || 0,
+        away_score: matchData.team_b_sets_won || 0,
+        status: matchData.status || 'pending',
+        current_set: matchData.sets?.length > 0 ? matchData.sets.length : 1,
+        current_set_started: matchData.sets?.some(set => !set.completed) || false
+      }));
+
+    } catch (err) {
+      setError('No se pudo cargar el partido');
+      console.error('Error fetching match:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [matchId]);
 
-  // Efecto para manejar el timer del set
+  useEffect(() => {
+    fetchMatchDetails();
+  }, [fetchMatchDetails]);
+
   useEffect(() => {
     let timer;
     const updateTimer = () => {
@@ -60,37 +124,7 @@ const MatchControl = () => {
     };
   }, [match.status, match.current_set_started, match.current_set, match.sets]);
 
-  const fetchMatchDetails = async () => {
-    try {
-      setLoading(true);
-      const response = await matchesService.getMatch(matchId);
-      if (response && response.data) {
-        const matchData = response.data;
-
-        // Filtra los jugadores titulares (is_holding=true) para ambos equipos
-        const homePositions = matchData.home_team.players
-          .filter(player => player.is_holding)
-          .slice(0, 6);
-
-        const awayPositions = matchData.away_team.players
-          .filter(player => player.is_holding)
-          .slice(0, 6);
-
-        setMatch({
-          ...matchData,
-          home_positions: homePositions,
-          away_positions: awayPositions
-        });
-      }
-    } catch (err) {
-      setError('No se pudo cargar el partido');
-      console.error('Error fetching match:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleMatchControl = async (action) => {
+  const handleMatchControl = useCallback(async (action) => {
     try {
       setIsLoadingAction(true);
       if (action === 'start') {
@@ -105,14 +139,14 @@ const MatchControl = () => {
     } finally {
       setIsLoadingAction(false);
     }
-  };
+  }, [matchId, fetchMatchDetails]);
 
-  const handleSetControl = async (action) => {
+  const handleSetControl = useCallback(async (action) => {
     try {
       setIsLoadingAction(true);
       if (action === 'start') {
         await matchesService.startSet(matchId);
-        setCurrentSetDuration(0); // Reiniciar el tiempo cuando comienza un nuevo set
+        setCurrentSetDuration(0);
       } else if (action === 'end') {
         await matchesService.endSet(matchId);
       }
@@ -123,49 +157,82 @@ const MatchControl = () => {
     } finally {
       setIsLoadingAction(false);
     }
-  };
+  }, [matchId, fetchMatchDetails]);
 
-  const handlePlayerSwitch = (team, benchPlayerId, fieldPositionIndex) => {
+  const handlePlayerSwitch = useCallback((team, benchPlayerId, fieldPositionIndex) => {
     console.log(`Switch player in team ${team} at position ${fieldPositionIndex} with bench player ${benchPlayerId}`);
-  };
+  }, []);
 
-  const handleAddPoint = async (team, playerId, pointType) => {
+  const handleAddPoint = useCallback(async (team, playerId, pointType) => {
+    if (!playerId) {
+      setError('Error: No se puede agregar punto sin jugador');
+      return;
+    }
+
+    setIsLoadingAction(true);
     try {
-      setIsLoadingAction(true);
-      await matchesService.updateScore(
-        matchId,
-        match.current_set, // Número del set actual
-        playerId,
-        pointType,
-        false // no es undo
-      );
-      await fetchMatchDetails();
+      const performanceData = {
+        player_id: playerId,
+        set_number: match.current_set,
+        points: 1,
+        aces: pointType === 'ace' ? 1 : 0,
+        assists: pointType === 'assist' ? 1 : 0,
+        blocks: pointType === 'block' ? 1 : 0
+      };
+
+      await matchesService.updatePlayerPerformance(matchId, performanceData);
+      
+      // Actualizar solo los datos necesarios
+      const updatedMatch = await matchesService.getMatch(matchId);
+      if (updatedMatch?.data) {
+        const newMatchData = updatedMatch.data;
+        setMatch(prevMatch => ({
+          ...prevMatch,
+          team_a_sets_won: newMatchData.team_a_sets_won,
+          team_b_sets_won: newMatchData.team_b_sets_won,
+          sets: newMatchData.sets
+        }));
+      }
     } catch (error) {
       console.error('Error al agregar punto:', error);
       setError('Error al agregar punto');
     } finally {
       setIsLoadingAction(false);
     }
-  };
+  }, [matchId, match.current_set]);
 
-  const handleRevertPoint = async (team, playerId, pointType) => {
+  const handleRevertPoint = useCallback(async (team, playerId, pointType) => {
+    setIsLoadingAction(true);
     try {
-      setIsLoadingAction(true);
-      await matchesService.updateScore(
-        matchId,
-        match.current_set, // Número del set actual
-        playerId,
-        pointType,
-        true // es undo
-      );
-      await fetchMatchDetails();
+      const performanceData = {
+        player_id: playerId,
+        set_number: match.current_set,
+        points: -1,
+        aces: pointType === 'ace' ? -1 : 0,
+        assists: pointType === 'assist' ? -1 : 0,
+        blocks: pointType === 'block' ? -1 : 0
+      };
+
+      await matchesService.updatePlayerPerformance(matchId, performanceData);
+      
+      // Actualizar solo los datos necesarios
+      const updatedMatch = await matchesService.getMatch(matchId);
+      if (updatedMatch?.data) {
+        const newMatchData = updatedMatch.data;
+        setMatch(prevMatch => ({
+          ...prevMatch,
+          team_a_sets_won: newMatchData.team_a_sets_won,
+          team_b_sets_won: newMatchData.team_b_sets_won,
+          sets: newMatchData.sets
+        }));
+      }
     } catch (error) {
       console.error('Error al revertir punto:', error);
       setError('Error al revertir punto');
     } finally {
       setIsLoadingAction(false);
     }
-  };
+  }, [matchId, match.current_set]);
 
   if (loading) return <div className="text-center text-2xl">Cargando...</div>;
   if (error) return <div className="text-center text-2xl text-red-500">Error: {error}</div>;
@@ -182,9 +249,7 @@ const MatchControl = () => {
             awaySetsWon={match.away_sets_won || 0}
           />
 
-          {/* Layout principal de 3 columnas (45% - 10% - 45%) */}
           <div className="grid grid-cols-1 md:grid-cols-[4fr_1fr_4fr] gap-6">
-            {/* Cancha Equipo Local */}
             <div className="md:col-span-1">
               <CourtControl
                 team="home"
@@ -194,14 +259,13 @@ const MatchControl = () => {
                 players={match.home_team.players}
                 isMatchStarted={match.status === 'in_progress'}
                 onPlayerSwitch={handlePlayerSwitch}
-                onPointScored={handleAddPoint} // Aquí se pasa correctamente
+                onPointScored={handleAddPoint}
                 onScoreDecrement={(playerId, pointType) =>
                   handleRevertPoint('home', playerId, pointType)}
               />
             </div>
 
             <div className="md:col-span-1 flex flex-col items-center space-y-4">
-              {/* Control de Set */}
               <div className="w-full max-w-[170px] mt-20">
                 <div className="text-xl font-bold text-center mb-2">
                   Set {match.current_set}
@@ -219,7 +283,6 @@ const MatchControl = () => {
                 </button>
               </div>
 
-              {/* Control de Partido */}
               <div className="w-full max-w-[170px]">
                 <button
                   onClick={() => handleMatchControl(match.status === 'in_progress' ? 'end' : 'start')}
@@ -237,7 +300,6 @@ const MatchControl = () => {
               </div>
             </div>
 
-            {/* Cancha Equipo Visitante */}
             <div className="md:col-span-1">
               <CourtControl
                 team="away"
@@ -262,4 +324,4 @@ const MatchControl = () => {
   );
 };
 
-export default MatchControl;
+export default React.memo(MatchControl);

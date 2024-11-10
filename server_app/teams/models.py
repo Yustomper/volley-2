@@ -32,7 +32,11 @@ class Player(models.Model):
     DEFAULT_AVATAR_MALE = "https://cdn.icon-icons.com/icons2/2643/PNG/512/male_boy_person_people_avatar_icon_159358.png"
     DEFAULT_AVATAR_FEMALE = "https://cdn.icon-icons.com/icons2/2643/PNG/512/female_woman_person_people_avatar_icon_159366.png"
 
-    team = models.ForeignKey('Team', on_delete=models.CASCADE, related_name="players")
+    team = models.ForeignKey(
+        Team, 
+        on_delete=models.CASCADE, 
+        related_name='players'  # Esto es importante
+    )
     name = models.CharField(max_length=100)
     jersey_number = models.PositiveIntegerField()
     position = models.CharField(max_length=2, choices=POSITION_CHOICES)
