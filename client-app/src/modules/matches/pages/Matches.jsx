@@ -2,13 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../../context/ThemeContext';
 import { Search, Plus, ChevronLeft, ChevronRight, Calendar, Clock, 
-  MapPin, Info,   Activity, CheckCircle, AlertTriangle, RefreshCw, HelpCircle 
+  MapPin, Info, Activity, CheckCircle, AlertTriangle, RefreshCw, HelpCircle, Trophy 
 } from 'lucide-react';
 import api from '../services/matchesService';
+import tournamentApi from '../../tournament/services/tournamentService';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import MatchFormModal  from '../components/match-summary/MatchFormModal';
-import { formatDateTime } from '../utils/dateFormatter'; // Importa el formateador de fechas
+import MatchFormModal from '../components/match-summary/MatchFormModal';
+import ModalTournament from '../../tournament/components/ModalTournament';
+import { formatDateTime } from '../utils/dateFormatter';
+
 
 const Matches = () => {
   const { isDarkMode } = useTheme();
@@ -18,7 +21,7 @@ const Matches = () => {
   const [sortOrder, setSortOrder] = useState('asc');
   const [pagination, setPagination] = useState({ page: 1, pageSize: 6, total: 0 });
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [isTournamentModalOpen, setIsTournamentModalOpen] = useState(false);
   const fetchMatches = useCallback(async () => {
     try {
       setLoading(true);
@@ -55,6 +58,16 @@ const Matches = () => {
   useEffect(() => {
     fetchMatches();
   }, [fetchMatches]);
+
+  const handleTournamentSubmit = async (tournamentData) => {
+    try {
+      await tournamentApi.createTournaments(tournamentData);
+      toast.success('Torneo creado exitosamente');
+      setIsTournamentModalOpen(false);
+    } catch (error) {
+      toast.error('Error al crear el torneo: ' + error.message);
+    }
+  };
 
   const handleSearch = (event) => {
     setSearch(event.target.value);
@@ -166,14 +179,24 @@ const Matches = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className={`text-4xl font-bold ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>Partidos</h1>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className={`${isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-orange-500 hover:bg-orange-600'} 
-              text-white px-6 py-3 rounded-full transition duration-300 flex items-center`}
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Crear Partido
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setIsTournamentModalOpen(true)}
+              className={`${isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-orange-500 hover:bg-orange-600'} 
+                text-white px-6 py-3 rounded-full transition duration-300 flex items-center`}
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Crear Torneo
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className={`${isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-orange-500 hover:bg-orange-600'} 
+                text-white px-6 py-3 rounded-full transition duration-300 flex items-center`}
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Crear Partido
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
@@ -225,27 +248,32 @@ const Matches = () => {
           </div>
         )}
         
+         {/* Modales */}
+         <MatchFormModal 
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleMatchSubmit}
+        />
 
-                {/* Invocando el Modal */}
-            <MatchFormModal 
-              open={isModalOpen}
-              onClose={handleModalClose}
-              onSubmit={handleMatchSubmit}
-            />
+        <ModalTournament
+          open={isTournamentModalOpen}
+          onClose={() => setIsTournamentModalOpen(false)}
+          onSubmit={handleTournamentSubmit}
+        />
+
+        <ToastContainer 
+          position="bottom-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme={isDarkMode ? "dark" : "light"}
+        />
       </div>
-
-      <ToastContainer 
-        position="bottom-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme={isDarkMode ? "dark" : "light"}
-      />
     </div>
   );
 };
