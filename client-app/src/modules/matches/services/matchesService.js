@@ -14,6 +14,11 @@ const matchesApi = {
   // Obtener detalles de un partido específico
   getMatch: (matchId) => api.get(`/api/matches/${matchId}/`),
 
+  getMatchPerformance: async (matchId) => {
+    const response = await api.get(`/api/matches/${matchId}/performance/`);
+    return response;
+  },
+
   // Actualizar un partido existente
   updateMatch: (matchId, matchData) => api.put(`/api/matches/${matchId}/`, matchData),
 
@@ -21,8 +26,21 @@ const matchesApi = {
   deleteMatch: (matchId) => api.delete(`/api/matches/${matchId}/`),
 
   // Registrar rendimiento de jugador en un set
-  updatePlayerPerformance: (matchId, performanceData) =>
-    api.patch(`/api/matches/${matchId}/performance/`, performanceData),
+  getPlayerPerformance: (matchId) => {
+    return api.get(`/api/matches/${matchId}/performance/`);
+  },
+
+  updatePlayerPerformance: async (matchId, performanceData) => {
+    const response = await api.patch(`/api/matches/${matchId}/performance/`, performanceData);
+    return response;
+  },
+
+  revertLastPoint: async (matchId, performanceData) => {
+    const response = await api.delete(`/api/matches/${matchId}/performance/`, {
+      data: performanceData
+    });
+    return response;
+  },
 
   // Realizar sustitución de jugadores
   substitutePlayer: (matchId, substitutionData) =>

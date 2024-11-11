@@ -1,5 +1,5 @@
 import React from 'react';
-import PlayerPosition from './court-control/PlayerPosition' // Asegúrate de que la ruta sea correcta
+import PlayerPosition from './court-control/PlayerPosition';
 import BenchPlayers from './court-control/BenchPlayers';
 import { RotateCcw } from 'lucide-react';
 
@@ -15,18 +15,12 @@ const CourtControl = ({
   onPointScored,
   onScoreDecrement
 }) => {
-  // Asegurarnos de que tenemos un array de 6 posiciones
   const validPositions = Array.isArray(positions) ? 
     positions.slice(0, 6) : Array(6).fill(null);
 
-  // Rellenar el array hasta tener 6 posiciones si es necesario
   while (validPositions.length < 6) {
     validPositions.push(null);
   }
-
-  // Debug para ver los datos que llegan
-  console.log(`${team} positions:`, validPositions);
-  console.log(`${team} players:`, players);
 
   return (
     <div className="w-full max-w-lg mx-auto bg-white rounded-lg shadow-lg p-6 space-y-6">
@@ -60,7 +54,7 @@ const CourtControl = ({
 
           {/* Posiciones Traseras */}
           <div className="grid grid-cols-3 gap-x-6">
-            {validPositions.slice(3, 6).map((position, idx) => (
+            {validPositions.slice(3).map((position, idx) => (
               <PlayerPosition
                 key={`${team}-back-${idx}`}
                 position={position}
@@ -77,21 +71,24 @@ const CourtControl = ({
       </div>
 
       {/* Botón de Revertir */}
-      <div className="flex justify-center mt-4">
-        <button
-          onClick={() => onScoreDecrement(team)}
-          className="flex items-center px-4 py-2 bg-red-500 text-white rounded-md text-sm hover:bg-red-600 transition-colors duration-200"
-        >
-          <RotateCcw className="w-5 h-5 mr-2" />
-          Revertir
-        </button>
-      </div>
+      {isMatchStarted && score > 0 && (
+        <div className="flex justify-center mt-4">
+          <button
+            onClick={() => onScoreDecrement(team)}
+            className="flex items-center px-4 py-2 bg-red-500 text-white rounded-md text-sm 
+                     hover:bg-red-600 transition-colors duration-200"
+          >
+            <RotateCcw className="w-5 h-5 mr-2" />
+            Revertir Último Punto
+          </button>
+        </div>
+      )}
 
       {/* Jugadores en Banca */}
       <div className="border-t pt-4 mt-4">
         <BenchPlayers 
           team={team} 
-          players={players.filter(p => !p.is_holding)}
+          players={players.filter(p => !p.is_holding)} 
           onPlayerSwitch={onPlayerSwitch} 
         />
       </div>

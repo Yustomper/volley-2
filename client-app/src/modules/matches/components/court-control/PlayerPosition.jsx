@@ -3,7 +3,6 @@ import { MdControlPoint } from "react-icons/md";
 import { PiUserSwitchThin } from "react-icons/pi";
 import PointTypeModal from './PointTypeModal';
 
-
 const PlayerPosition = ({
   position,
   index,
@@ -24,7 +23,6 @@ const PlayerPosition = ({
     setShowPointModal(false);
   };
 
-  // Muestra la información del jugador en una tarjeta
   return (
     <>
       <div className="bg-white rounded-lg shadow-md p-4 w-32 h-36 flex flex-col items-center">
@@ -59,7 +57,6 @@ const PlayerPosition = ({
         </div>
       </div>
 
-      {/* Modal para seleccionar el tipo de punto */}
       <PointTypeModal
         open={showPointModal}
         onClose={() => setShowPointModal(false)}

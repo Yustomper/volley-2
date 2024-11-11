@@ -11,6 +11,7 @@ from .serializers import (
 from teams.models import Player
 import requests
 from django.shortcuts import get_object_or_404
+from django.db.models import Sum
 
 
 class MatchListCreateView(generics.ListCreateAPIView):
@@ -109,6 +110,61 @@ class StartMatchView(APIView):
 
 
 class PlayerPerformanceView(APIView):
+    def get(self, request, match_id):
+        try:
+            match = Match.objects.get(id=match_id)
+            sets = match.sets.all().order_by('set_number')
+            
+            # Obtener el set actual (el último set no completado o el último set)
+            current_set = sets.filter(completed=False).first() or sets.last()
+            
+            # Preparar la información de los sets
+            sets_data = []
+            for set_obj in sets:
+                set_data = {
+                    'id': set_obj.id,
+                    'set_number': set_obj.set_number,
+                    'team_a_points': set_obj.team_a_points,
+                    'team_b_points': set_obj.team_b_points,
+                    'completed': set_obj.completed,
+                    # Obtener estadísticas de jugadores por equipo en este set
+                    'team_a_stats': PlayerPerformance.objects.filter(
+                        set=set_obj,
+                        player__team=match.team_a
+                    ).aggregate(
+                        total_points=Sum('points'),
+                        total_blocks=Sum('blocks'),
+                        total_aces=Sum('aces'),
+                        total_assists=Sum('assists')
+                    ),
+                    'team_b_stats': PlayerPerformance.objects.filter(
+                        set=set_obj,
+                        player__team=match.team_b
+                    ).aggregate(
+                        total_points=Sum('points'),
+                        total_blocks=Sum('blocks'),
+                        total_aces=Sum('aces'),
+                        total_assists=Sum('assists')
+                    )
+                }
+                sets_data.append(set_data)
+
+            response_data = {
+                'match_id': match_id,
+                'status': match.status,
+                'team_a_sets_won': match.team_a_sets_won,
+                'team_b_sets_won': match.team_b_sets_won,
+                'current_set': current_set.set_number if current_set else 1,
+                'sets': sets_data
+            }
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except Match.DoesNotExist:
+            return Response(
+                {"error": "Partido no encontrado"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
     def patch(self, request, match_id):
         serializer = PlayerPerformanceSerializer(data=request.data)
         if serializer.is_valid():
