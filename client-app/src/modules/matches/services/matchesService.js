@@ -58,10 +58,15 @@ const matchesApi = {
   },
 
 
-  // Realizar sustitución de jugadores
-  substitutePlayer: (matchId, substitutionData) =>
-    api.post(`/api/matches/${matchId}/substitute/`, substitutionData),
-
+  substitutePlayer: async (matchId, substitutionData) => {
+    try {
+      const response = await api.post(`/api/matches/${matchId}/substitute/`, substitutionData);
+      return response.data;
+    } catch (error) {
+      console.error('Error en substitutePlayer:', error.response?.data);
+      throw error;
+    }
+  },
   // Registrar tiempo fuera
   registerTimeout: (matchId, timeoutData) =>
     api.post(`/api/matches/${matchId}/timeout/`, timeoutData),

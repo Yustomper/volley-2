@@ -16,8 +16,23 @@ const CourtControl = ({
   onScoreDecrement
 }) => {
   const { isDarkMode } = useTheme();
-  
-  const validPositions = Array.isArray(positions) ? 
+
+
+  const handlePlayerSwitch = async (substitutionData) => {
+    setIsLoadingAction(true);
+    try {
+      await matchesService.substitutePlayer(matchId, substitutionData);
+      toast.success('Cambio realizado con éxito');
+      // Importante: recargar los datos del partido después del cambio
+      await fetchMatchDetails();
+    } catch (error) {
+      console.error('Error en el cambio:', error);
+      toast.error(error.response?.data?.error || 'Error al realizar el cambio');
+    } finally {
+      setIsLoadingAction(false);
+    }
+  };
+  const validPositions = Array.isArray(positions) ?
     positions.slice(0, 6) : Array(6).fill(null);
 
   while (validPositions.length < 6) {
@@ -43,7 +58,7 @@ const CourtControl = ({
         <div className={`absolute inset-y-0 left-1/2 w-0.5 ${isDarkMode ? 'bg-white/20' : 'bg-white'} transform -translate-x-1/2`} />
         <div className={`absolute top-1/2 left-0 w-full h-0.5 border-t-2 border-dashed 
                       ${isDarkMode ? 'border-white/20' : 'border-white'} transform -translate-y-1/2`} />
-        
+
         {/* Grid de Jugadores */}
         <div className="relative w-full h-full grid gap-y-8">
           {/* Delanteros */}
@@ -83,11 +98,10 @@ const CourtControl = ({
         <div className="flex justify-center mt-6">
           <button
             onClick={() => onScoreDecrement(team)}
-            className={`flex items-center px-6 py-3 ${
-              isDarkMode 
-                ? 'bg-red-600 hover:bg-red-700' 
-                : 'bg-red-500 hover:bg-red-600'
-            } text-white rounded-xl font-medium transform hover:scale-105 
+            className={`flex items-center px-6 py-3 ${isDarkMode
+              ? 'bg-red-600 hover:bg-red-700'
+              : 'bg-red-500 hover:bg-red-600'
+              } text-white rounded-xl font-medium transform hover:scale-105 
             transition-all duration-300 shadow-lg`}
           >
             <RotateCcw className="w-5 h-5 mr-2" />
@@ -98,10 +112,10 @@ const CourtControl = ({
 
       {/* Jugadores en Banca */}
       <div className={`mt-6 pt-6 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-        <BenchPlayers 
-          team={team} 
-          players={players.filter(p => !p.is_holding)}
-          onPlayerSwitch={onPlayerSwitch} 
+        <BenchPlayers
+          team={team} // 'home' o 'away'
+          players={players}
+          onPlayerSwitch={handlePlayerSwitch}
         />
       </div>
     </div>
