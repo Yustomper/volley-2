@@ -5,6 +5,16 @@ import api from "../../auth/services/api";
 
 const matchesApi = {
 
+  getWeather: async (matchId) => {
+    try {
+      const response = await api.get(`/api/matches/${matchId}/weather/`);
+      return response;
+    } catch (error) {
+      console.error('Error getting weather:', error);
+      throw error;
+    }
+  },
+
   // Obtener todos los partidos con filtros opcionales
   getMatches: (params) => api.get(`/api/matches/`, { params }),
 
@@ -36,11 +46,17 @@ const matchesApi = {
   },
 
   revertLastPoint: async (matchId, performanceData) => {
-    const response = await api.delete(`/api/matches/${matchId}/performance/`, {
-      data: performanceData
-    });
-    return response;
+    try {
+      const response = await api.delete(`/api/matches/${matchId}/performance/`, {
+        data: performanceData  // Importante: usar 'data' para enviar el cuerpo en DELETE
+      });
+      return response;
+    } catch (error) {
+      console.error('Error en revertLastPoint:', error);
+      throw error;
+    }
   },
+
 
   // Realizar sustitución de jugadores
   substitutePlayer: (matchId, substitutionData) =>

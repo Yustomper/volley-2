@@ -12,11 +12,18 @@ from teams.models import Player
 import requests
 from django.shortcuts import get_object_or_404
 from django.db.models import Sum
+from rest_framework.pagination import PageNumberPagination
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 class MatchListCreateView(generics.ListCreateAPIView):
     queryset = Match.objects.all().select_related('team_a', 'team_b', 'tournament')
     serializer_class = MatchSerializer
+    pagination_class = StandardResultsSetPagination
 
     def perform_create(self, serializer):
         # Guardamos el partido con los datos proporcionados

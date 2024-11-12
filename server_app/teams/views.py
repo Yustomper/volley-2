@@ -7,11 +7,19 @@ from .models import Team, Player
 from .serializers import TeamSerializer, PlayerSerializer
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from rest_framework.pagination import PageNumberPagination
+
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 6
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 class TeamViewSet(viewsets.ModelViewSet):
     queryset = Team.objects.all()
     serializer_class = TeamSerializer
+    pagination_class = StandardResultsSetPagination
     permission_classes = [permissions.IsAuthenticated]
 
     # Filtros para búsqueda, ordenamiento y filtrado
