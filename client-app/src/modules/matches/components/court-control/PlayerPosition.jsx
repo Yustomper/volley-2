@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { MdControlPoint } from "react-icons/md";
-import { PiUserSwitchThin } from "react-icons/pi";
 import { useTheme } from '../../../../context/ThemeContext';
 import PointTypeModal from './PointTypeModal';
 
@@ -10,7 +9,6 @@ const PlayerPosition = ({
   team,
   isMatchStarted,
   onPositionClick,
-  onPlayerSwitch,
   onPointScored,
 }) => {
   const { isDarkMode } = useTheme();
@@ -43,20 +41,15 @@ const PlayerPosition = ({
               {position.name}
             </div>
             
-            <div className="flex space-x-2 mt-auto">
+            <div className="flex justify-center mt-auto">
               <button
                 onClick={() => setShowPointModal(true)}
-                className={`p-2 ${isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'} text-white rounded-lg transition-colors duration-200`}
+                className={`p-2 w-full ${isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'} 
+                text-white rounded-lg transition-colors duration-200 flex items-center justify-center gap-2`}
                 title="Anotar Punto"
               >
                 <MdControlPoint className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => onPlayerSwitch(team, index, position.id)}
-                className={`p-2 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white rounded-lg transition-colors duration-200`}
-                title="Cambio de Jugador"
-              >
-                <PiUserSwitchThin className="w-4 h-4" />
+                <span className="text-sm">Punto</span>
               </button>
             </div>
           </>

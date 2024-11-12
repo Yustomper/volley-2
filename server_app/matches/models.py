@@ -49,22 +49,22 @@ class Match(models.Model):
                 "El partido debe estar en 'upcoming' para iniciar.")
 
     def check_set_completion(self, set_instance):
-        if set_instance.set_number < 5:
-            if ((set_instance.team_a_points >= 25 or set_instance.team_b_points >= 25) and
-                    abs(set_instance.team_a_points - set_instance.team_b_points) >= 2) or max(set_instance.team_a_points, set_instance.team_b_points) >= 30:
+        if set_instance.set_number < 5:  # Sets normales
+            if ((set_instance.team_a_points >= 25 or set_instance.team_b_points >= 25) and 
+                    abs(set_instance.team_a_points - set_instance.team_b_points) >= 2):
                 self.update_set_winner(set_instance)
-        elif set_instance.set_number == 5:
-            if ((set_instance.team_a_points >= 15 or set_instance.team_b_points >= 15) and
-                    abs(set_instance.team_a_points - set_instance.team_b_points) >= 2) or max(set_instance.team_a_points, set_instance.team_b_points) >= 20:
+        elif set_instance.set_number == 5:  # Set decisivo
+            if ((set_instance.team_a_points >= 15 or set_instance.team_b_points >= 15) and 
+                    abs(set_instance.team_a_points - set_instance.team_b_points) >= 2):
                 self.update_set_winner(set_instance)
 
-        # Verificar si el partido ha terminado
-        if self.team_a_sets_won == 2 or self.team_b_sets_won == 2:
-            self.status = 'finished'
-            self.end_time = timezone.now()  # Registrar la hora de finalización
-            self.save()
-        elif set_instance.completed:  # Inicia el siguiente set solo si el actual ha finalizado
-            self.start_next_set()
+        # Si el set está completado y ningún equipo ha ganado el partido, iniciar el siguiente set
+        if set_instance.completed:
+            if self.team_a_sets_won < 3 and self.team_b_sets_won < 3:
+                self.start_next_set()
+            else:
+                self.status = 'finished'
+                self.save()
 
     def start_next_set(self):
         # Crear un nuevo set solo si el partido no ha terminado

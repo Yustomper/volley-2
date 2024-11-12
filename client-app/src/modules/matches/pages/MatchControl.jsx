@@ -1,12 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { FaStop, FaPlay, FaForward } from 'react-icons/fa';
+import { FaStop, FaPlay, FaTrophy } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useTheme } from '../../../context/ThemeContext';
 import matchesService from '../services/matchesService';
 import MatchControlHeader from '../components/MatchControlHeader';
 import CourtControl from '../components/CourtControl';
+
+const formatDuration = (seconds) => {
+  const pad = (num) => String(num).padStart(2, '0');
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${pad(minutes)}:${pad(remainingSeconds)}`;
+};
 
 const MatchControl = () => {
   const { isDarkMode } = useTheme();
@@ -28,33 +35,7 @@ const MatchControl = () => {
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [currentSetDuration, setCurrentSetDuration] = useState(0);
   const [isSetTransitioning, setIsSetTransitioning] = useState(false);
-
-  const getCurrentSetScores = useCallback(() => {
-    if (match.sets && match.sets.length > 0) {
-      const currentSet = match.sets.find(set => set.set_number === match.current_set);
-      return {
-        team_a: currentSet?.team_a_points || 0,
-        team_b: currentSet?.team_b_points || 0
-      };
-    }
-    return { team_a: 0, team_b: 0 };
-  }, [match.sets, match.current_set]);
-
-  const checkSetWinner = useCallback((setData) => {
-    if (setData.completed) {
-      const winner = setData.team_a_points > setData.team_b_points ? 
-        match.home_team.name : match.away_team.name;
-      const score = `${setData.team_a_points}-${setData.team_b_points}`;
-      toast.success(`¡${winner} ha ganado el Set ${setData.set_number}! (${score})`, {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
-    }
-  }, [match.home_team.name, match.away_team.name]);
+  const [matchWinner, setMatchWinner] = useState(null);
 
   const fetchMatchDetails = useCallback(async () => {
     try {
@@ -70,6 +51,13 @@ const MatchControl = () => {
 
       const matchData = matchResponse.data;
       const performanceData = performanceResponse.data;
+
+      // Verificar si el partido está finalizado
+      if (performanceData.team_a_sets_won === 3 || performanceData.team_b_sets_won === 3) {
+        const winner = performanceData.team_a_sets_won === 3 ? matchData.team_a : matchData.team_b;
+        setMatchWinner(winner);
+        matchData.status = 'completed';
+      }
       
       const processTeamData = (teamData) => {
         if (!teamData || !Array.isArray(teamData.players)) {
@@ -118,7 +106,6 @@ const MatchControl = () => {
         sets: performanceData.sets,
         current_set_started: performanceData.sets?.some(set => !set.completed) || false
       }));
-
     } catch (err) {
       setError('No se pudo cargar el partido');
       console.error('Error fetching match:', err);
@@ -128,44 +115,85 @@ const MatchControl = () => {
     }
   }, [matchId]);
 
-  useEffect(() => {
-    fetchMatchDetails();
-  }, [fetchMatchDetails]);
+  const handleMatchControl = useCallback(async (action) => {
+    try {
+      setIsLoadingAction(true);
+      if (action === 'start') {
+        await matchesService.startMatch(matchId);
+        toast.success('¡Partido iniciado!');
+      } else if (action === 'end') {
+        await matchesService.endMatch(matchId);
+        toast.success('Partido finalizado');
+      }
+      await fetchMatchDetails();
+    } catch (error) {
+      console.error('Error en control de partido:', error);
+      setError('Error al controlar el partido');
+      toast.error('Error al controlar el partido');
+    } finally {
+      setIsLoadingAction(false);
+    }
+  }, [matchId, fetchMatchDetails]);
 
-  useEffect(() => {
-    let timer;
-    const updateTimer = () => {
-      if (match.status === 'live' && match.current_set_started && !isSetTransitioning) {
-        if (match.sets && match.sets.length > 0) {
-          const currentSetData = match.sets[match.current_set - 1];
-          if (currentSetData) {
-            if (currentSetData.completed && !isSetTransitioning) {
-              setIsSetTransitioning(true);
-              checkSetWinner(currentSetData);
-              setCurrentSetDuration(0);
-              setTimeout(() => {
-                setIsSetTransitioning(false);
-              }, 3000);
-            } else if (!currentSetData.completed) {
-              setCurrentSetDuration(prev => prev + 1);
-            }
-          }
+  const checkSetWinner = useCallback(async (setData) => {
+    if (setData.completed && !isSetTransitioning) {
+      setIsSetTransitioning(true);
+      const winner = setData.team_a_points > setData.team_b_points ? 
+        match.home_team.name : match.away_team.name;
+      const score = `${setData.team_a_points}-${setData.team_b_points}`;
+      
+      toast.success(`¡${winner} ha ganado el Set ${setData.set_number}! (${score})`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        toastId: `set-winner-${setData.set_number}`
+      });
+
+      try {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Verificar si algún equipo ha ganado el partido (3 sets)
+        const totalSetsTeamA = match.team_a_sets_won + (setData.team_a_points > setData.team_b_points ? 1 : 0);
+        const totalSetsTeamB = match.team_b_sets_won + (setData.team_b_points > setData.team_a_points ? 1 : 0);
+        
+        if (totalSetsTeamA === 3 || totalSetsTeamB === 3) {
+          const winner = totalSetsTeamA === 3 ? match.home_team : match.away_team;
+          setMatchWinner(winner);
+          toast.success(`¡${winner.name} ha ganado el partido!`, {
+            position: "top-center",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true
+          });
+          await fetchMatchDetails(); // Esto actualizará el estado del partido
+        } else {
+          setCurrentSetDuration(0);
+          await fetchMatchDetails();
         }
-        timer = setInterval(() => {
-          setCurrentSetDuration(prev => prev + 1);
-        }, 1000);
-      } else {
-        setCurrentSetDuration(0);
+      } catch (error) {
+        console.error('Error al manejar el fin del set:', error);
+        toast.error('Error al procesar el fin del set');
+      } finally {
+        setIsSetTransitioning(false);
       }
-    };
+    }
+  }, [match.home_team, match.away_team, match.team_a_sets_won, match.team_b_sets_won, fetchMatchDetails, isSetTransitioning]);
 
-    updateTimer();
-    return () => {
-      if (timer) {
-        clearInterval(timer);
-      }
-    };
-  }, [match.status, match.current_set_started, match.sets, match.current_set, isSetTransitioning, checkSetWinner]);
+  const getCurrentSetScores = useCallback(() => {
+    if (match.sets && match.sets.length > 0) {
+      const currentSet = match.sets.find(set => !set.completed) || match.sets[match.sets.length - 1];
+      return {
+        team_a: currentSet?.team_a_points || 0,
+        team_b: currentSet?.team_b_points || 0
+      };
+    }
+    return { team_a: 0, team_b: 0 };
+  }, [match.sets]);
 
   const handleAddPoint = async (team, playerId, pointType) => {
     if (!playerId) {
@@ -208,47 +236,6 @@ const MatchControl = () => {
     }
   };
 
-  const handleMatchControl = useCallback(async (action) => {
-    try {
-      setIsLoadingAction(true);
-      if (action === 'start') {
-        await matchesService.startMatch(matchId);
-        toast.success('¡Partido iniciado!');
-      } else if (action === 'end') {
-        await matchesService.endMatch(matchId);
-        toast.success('Partido finalizado');
-      }
-      await fetchMatchDetails();
-    } catch (error) {
-      console.error('Error en control de partido:', error);
-      setError('Error al controlar el partido');
-      toast.error('Error al controlar el partido');
-    } finally {
-      setIsLoadingAction(false);
-    }
-  }, [matchId, fetchMatchDetails]);
-
-  const handleSetControl = useCallback(async (action) => {
-    try {
-      setIsLoadingAction(true);
-      if (action === 'start') {
-        await matchesService.startSet(matchId);
-        setCurrentSetDuration(0);
-        toast.info(`Iniciando Set ${match.current_set}`);
-      } else if (action === 'end') {
-        await matchesService.endSet(matchId);
-        toast.info('Finalizando Set');
-      }
-      await fetchMatchDetails();
-    } catch (error) {
-      console.error('Error en control de set:', error);
-      setError('Error al controlar el set');
-      toast.error('Error al controlar el set');
-    } finally {
-      setIsLoadingAction(false);
-    }
-  }, [matchId, fetchMatchDetails, match.current_set]);
-
   const handleRevertPoint = async (team) => {
     setIsLoadingAction(true);
     try {
@@ -258,14 +245,12 @@ const MatchControl = () => {
         return;
       }
   
-      // Obtener las estadísticas del equipo actual
       const teamStats = team === 'home' ? currentSet.team_a_stats : currentSet.team_b_stats;
       if (!teamStats || teamStats.total_points <= 0) {
         toast.warning('No hay puntos para revertir en este equipo');
         return;
       }
   
-      // Encontrar el último jugador que anotó en este equipo
       const teamPlayers = team === 'home' ? match.home_team.players : match.away_team.players;
       const lastScoringPlayer = teamPlayers.find(player => player.is_starter);
   
@@ -309,6 +294,41 @@ const MatchControl = () => {
     console.log(`Switch player in team ${team} at position ${fieldPositionIndex} with bench player ${benchPlayerId}`);
   }, []);
 
+  useEffect(() => {
+    fetchMatchDetails();
+  }, [fetchMatchDetails]);
+
+  useEffect(() => {
+    let timer;
+    const updateTimer = () => {
+      if (match.status === 'live' && match.current_set_started && !isSetTransitioning) {
+        if (match.sets && match.sets.length > 0) {
+          const currentSetData = match.sets[match.current_set - 1];
+          if (currentSetData) {
+            if (currentSetData.completed && !isSetTransitioning) {
+              checkSetWinner(currentSetData);
+              setCurrentSetDuration(0);
+            } else if (!currentSetData.completed) {
+              setCurrentSetDuration(prev => prev + 1);
+            }
+          }
+        }
+        timer = setInterval(() => {
+          setCurrentSetDuration(prev => prev + 1);
+        }, 1000);
+      } else {
+        setCurrentSetDuration(0);
+      }
+    };
+
+    updateTimer();
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [match.status, match.current_set_started, match.sets, match.current_set, isSetTransitioning, checkSetWinner]);
+
   if (loading) {
     return (
       <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
@@ -326,14 +346,35 @@ const MatchControl = () => {
       </div>
     );
   }
-
-
-  // ... (todo el código anterior se mantiene igual)
+  // Renderizar pantalla de partido finalizado si hay un ganador
+  if (match.status === 'completed' || matchWinner) {
+    return (
+      <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} py-8`}>
+        <div className="container mx-auto px-4">
+          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+            <div className="text-center space-y-6">
+              <FaTrophy className={`mx-auto text-6xl ${isDarkMode ? 'text-yellow-400' : 'text-yellow-500'}`} />
+              <h2 className={`text-4xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                ¡Partido Finalizado!
+              </h2>
+              <div className={`text-2xl ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                Ganador: <span className="font-bold text-green-500">{matchWinner?.name}</span>
+              </div>
+              <div className={`text-xl ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Resultado Final: {match.team_a_sets_won} - {match.team_b_sets_won}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'} py-8 transition-colors duration-200`}>
       <div className="container mx-auto px-4">
         <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg p-6`}>
+          {/* Header con información del partido */}
           <MatchControlHeader
             match={match}
             currentSet={match.current_set}
@@ -342,6 +383,7 @@ const MatchControl = () => {
             awaySetsWon={match.team_b_sets_won}
           />
 
+          {/* Grid principal */}
           <div className="mt-8 grid grid-cols-1 md:grid-cols-[4fr_1fr_4fr] gap-6">
             {/* Equipo Local */}
             <div className="md:col-span-1">
@@ -358,63 +400,56 @@ const MatchControl = () => {
               />
             </div>
 
-            {/* Controles Centrales */}
-            <div className="md:col-span-1 flex flex-col items-center space-y-6">
-              <div className="w-full max-w-[170px] mt-20">
-                <div className={`text-xl font-bold text-center mb-2 ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>
-                  {(() => {
-                    const currentSetData = match.sets?.find(set => set.set_number === match.current_set);
-                    const isSetCompleted = currentSetData?.completed;
-                    const nextSetNumber = match.current_set + 1;
-                    
-                    return isSetCompleted ? 
-                      `Preparando Set ${nextSetNumber}` : 
-                      `Set ${match.current_set}`;
-                  })()}
+            {/* Panel Central */}
+            <div className="md:col-span-1 flex flex-col items-center justify-center space-y-6">
+              {/* Información del Set y Tiempo */}
+              <div className="text-center space-y-2">
+                <div className={`text-2xl font-bold ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>
+                  {match.status === 'live' ? 
+                    (match.current_set_started ? 
+                      `Set ${match.current_set}` : 
+                      `Preparando Set ${match.current_set}`
+                    ) : 
+                    `Set ${match.current_set}`
+                  }
                 </div>
-                <button
-                  onClick={() => handleSetControl(match.current_set_started ? 'end' : 'start')}
-                  disabled={isLoadingAction || match.status !== 'live' || isSetTransitioning}
-                  className={`w-full px-4 py-3 rounded-xl flex items-center justify-center space-x-2 
-                    ${match.current_set_started ? 
-                      `${isDarkMode ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-yellow-500 hover:bg-yellow-600'}` : 
-                      `${isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'}`}
-                    text-white transition-colors duration-200
-                    ${(match.status !== 'live' || isSetTransitioning || isLoadingAction) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <FaForward className="mr-2" />
-                  {(() => {
-                    const currentSetData = match.sets?.find(set => set.set_number === match.current_set);
-                    const isSetCompleted = currentSetData?.completed;
-                    const nextSetNumber = match.current_set + 1;
-                    
-                    if (isSetCompleted) {
-                      return `Iniciar Set ${nextSetNumber}`;
-                    } else {
-                      return match.current_set_started ? 'Finalizar Set' : `Iniciar Set ${match.current_set}`;
-                    }
-                  })()}
-                </button>
+                <div className={`font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {formatDuration(currentSetDuration)}
+                </div>
               </div>
 
-              <div className="w-full max-w-[170px]">
+              {/* Botones de Control del Partido */}
+              {match.status !== 'live' ? (
+                // Botón Iniciar Partido
                 <button
-                  onClick={() => handleMatchControl(match.status === 'live' ? 'end' : 'start')}
+                  onClick={() => handleMatchControl('start')}
                   disabled={isLoadingAction}
-                  className={`w-full px-4 py-3 rounded-xl flex items-center justify-center space-x-2 
-                    ${match.status === 'live' ? 
-                      `${isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'}` : 
-                      `${isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'}`}
-                    text-white transition-colors duration-200
-                    ${isLoadingAction ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`w-full max-w-[170px] px-4 py-3 rounded-xl flex items-center justify-center
+                    ${isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600'}
+                    text-white font-medium
+                    transition-all duration-200
+                    transform hover:scale-105 active:scale-95
+                    ${isLoadingAction ? 'opacity-50 cursor-not-allowed' : ''}
+                    shadow-lg hover:shadow-xl`}
                 >
-                  {match.status === 'live' ? (
-                    <><FaStop className="mr-2" /> Finalizar Partido</>
-                  ) : (
-                    <><FaPlay className="mr-2" /> Iniciar Partido</>
-                  )}
+                  <FaPlay className="mr-2" /> Iniciar Partido
                 </button>
-              </div>
+              ) : (
+                // Botón Finalizar Partido
+                <button
+                  onClick={() => handleMatchControl('end')}
+                  disabled={isLoadingAction}
+                  className={`w-full max-w-[170px] px-4 py-3 rounded-xl flex items-center justify-center
+                    ${isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600'}
+                    text-white font-medium
+                    transition-all duration-200
+                    transform hover:scale-105 active:scale-95
+                    ${isLoadingAction ? 'opacity-50 cursor-not-allowed' : ''}
+                    shadow-lg hover:shadow-xl`}
+                >
+                  <FaStop className="mr-2" /> Finalizar Partido
+                </button>
+              )}
             </div>
 
             {/* Equipo Visitante */}
@@ -434,6 +469,8 @@ const MatchControl = () => {
           </div>
         </div>
       </div>
+
+      {/* Toast Notifications Container */}
       <ToastContainer 
         position="top-right"
         autoClose={5000}
@@ -445,9 +482,9 @@ const MatchControl = () => {
         draggable
         pauseOnHover
         theme={isDarkMode ? "dark" : "light"}
+        limit={3}
       />
     </div>
   );
-};
-
+}
 export default React.memo(MatchControl);
