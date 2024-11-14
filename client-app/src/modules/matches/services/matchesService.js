@@ -58,12 +58,13 @@ const matchesApi = {
   },
 
 
-  substitutePlayer: async (matchId, substitutionData) => {
+  substitutePlayer: async (matchId, data) => {
     try {
-      const response = await api.post(`/api/matches/${matchId}/substitute/`, substitutionData);
+      console.log('Enviando datos a la API:', { matchId, data });
+      const response = await api.post(`/api/matches/${matchId}/substitute/`, data);
       return response.data;
     } catch (error) {
-      console.error('Error en substitutePlayer:', error.response?.data);
+      console.error('Error en substitutePlayer:', error.response?.data || error);
       throw error;
     }
   },

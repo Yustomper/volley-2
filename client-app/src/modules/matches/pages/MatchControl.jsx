@@ -44,7 +44,7 @@ const MatchControl = () => {
         matchesService.getMatch(matchId),
         matchesService.getPlayerPerformance(matchId)
       ]);
-      
+
       if (!matchResponse?.data) {
         throw new Error('No se recibieron datos del partido');
       }
@@ -58,7 +58,7 @@ const MatchControl = () => {
         setMatchWinner(winner);
         matchData.status = 'completed';
       }
-      
+
       const processTeamData = (teamData) => {
         if (!teamData || !Array.isArray(teamData.players)) {
           return { players: [], positions: Array(6).fill(null) };
@@ -138,10 +138,10 @@ const MatchControl = () => {
   const checkSetWinner = useCallback(async (setData) => {
     if (setData.completed && !isSetTransitioning) {
       setIsSetTransitioning(true);
-      const winner = setData.team_a_points > setData.team_b_points ? 
+      const winner = setData.team_a_points > setData.team_b_points ?
         match.home_team.name : match.away_team.name;
       const score = `${setData.team_a_points}-${setData.team_b_points}`;
-      
+
       toast.success(`¡${winner} ha ganado el Set ${setData.set_number}! (${score})`, {
         position: "top-center",
         autoClose: 3000,
@@ -154,11 +154,11 @@ const MatchControl = () => {
 
       try {
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
+
         // Verificar si algún equipo ha ganado el partido (3 sets)
         const totalSetsTeamA = match.team_a_sets_won + (setData.team_a_points > setData.team_b_points ? 1 : 0);
         const totalSetsTeamB = match.team_b_sets_won + (setData.team_b_points > setData.team_a_points ? 1 : 0);
-        
+
         if (totalSetsTeamA === 3 || totalSetsTeamB === 3) {
           const winner = totalSetsTeamA === 3 ? match.home_team : match.away_team;
           setMatchWinner(winner);
@@ -200,7 +200,7 @@ const MatchControl = () => {
       toast.error('Error: No se puede agregar punto sin jugador');
       return;
     }
-  
+
     setIsLoadingAction(true);
     try {
       const performanceData = {
@@ -213,9 +213,9 @@ const MatchControl = () => {
       };
 
       console.log('Sending performance data:', performanceData);
-  
+
       const response = await matchesService.updatePlayerPerformance(matchId, performanceData);
-  
+
       if (response?.data) {
         const updatedPerformance = await matchesService.getMatchPerformance(matchId);
         if (updatedPerformance?.data) {
@@ -244,21 +244,21 @@ const MatchControl = () => {
         toast.error('No hay set activo para revertir puntos');
         return;
       }
-  
+
       const teamStats = team === 'home' ? currentSet.team_a_stats : currentSet.team_b_stats;
       if (!teamStats || teamStats.total_points <= 0) {
         toast.warning('No hay puntos para revertir en este equipo');
         return;
       }
-  
+
       const teamPlayers = team === 'home' ? match.home_team.players : match.away_team.players;
       const lastScoringPlayer = teamPlayers.find(player => player.is_starter);
-  
+
       if (!lastScoringPlayer) {
         toast.error('No se encontró el jugador para revertir el punto');
         return;
       }
-  
+
       const performanceData = {
         player_id: lastScoringPlayer.id,
         set_number: match.current_set,
@@ -267,11 +267,11 @@ const MatchControl = () => {
         assists: 0,
         blocks: 0
       };
-  
+
       console.log('Reverting point with data:', performanceData);
-  
+
       await matchesService.revertLastPoint(matchId, performanceData);
-      
+
       const updatedPerformance = await matchesService.getMatchPerformance(matchId);
       if (updatedPerformance?.data) {
         setMatch(prevMatch => ({
@@ -394,7 +394,8 @@ const MatchControl = () => {
                 positions={match.home_positions}
                 players={match.home_team.players}
                 isMatchStarted={match.status === 'live'}
-                onPlayerSwitch={handlePlayerSwitch}
+                onPlayerSwitch={{ matchId, handlePlayerSwitch }}
+                matchId={matchId}
                 onPointScored={handleAddPoint}
                 onScoreDecrement={() => handleRevertPoint('home')}
               />
@@ -405,11 +406,11 @@ const MatchControl = () => {
               {/* Información del Set y Tiempo */}
               <div className="text-center space-y-2">
                 <div className={`text-2xl font-bold ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>
-                  {match.status === 'live' ? 
-                    (match.current_set_started ? 
-                      `Set ${match.current_set}` : 
+                  {match.status === 'live' ?
+                    (match.current_set_started ?
+                      `Set ${match.current_set}` :
                       `Preparando Set ${match.current_set}`
-                    ) : 
+                    ) :
                     `Set ${match.current_set}`
                   }
                 </div>
@@ -462,6 +463,7 @@ const MatchControl = () => {
                 players={match.away_team.players}
                 isMatchStarted={match.status === 'live'}
                 onPlayerSwitch={handlePlayerSwitch}
+                matchId={matchId}
                 onPointScored={handleAddPoint}
                 onScoreDecrement={() => handleRevertPoint('away')}
               />
@@ -471,7 +473,7 @@ const MatchControl = () => {
       </div>
 
       {/* Toast Notifications Container */}
-      <ToastContainer 
+      <ToastContainer
         position="top-right"
         autoClose={5000}
         hideProgressBar={false}

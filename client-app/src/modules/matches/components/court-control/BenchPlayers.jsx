@@ -1,27 +1,33 @@
-// BenchPlayers.jsx
 import React, { useState } from 'react';
 import { PiUserSwitchThin } from "react-icons/pi";
 import { useTheme } from '../../../../context/ThemeContext';
 import { toast } from 'react-toastify';
 import PlayerSwitchModal from './PlayerSwitchModal';
+import matchesService from '../../../matches/services/matchesService';
 
-const BenchPlayers = ({ team, players, onPlayerSwitch }) => {
+const BenchPlayers = ({ team, players, starters, onPlayerSwitch, isLoading, positions, matchId }) => {
   const { isDarkMode } = useTheme();
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedStarter, setSelectedStarter] = useState(null);
 
-  // Separar jugadores titulares y suplentes
-  const benchPlayers = players.filter(p => !p.is_starter);
-  const starters = players.filter(p => p.is_starter);
+  // Filtrar jugadores que NO están en las posiciones actuales
+  const benchPlayers = players.filter(player => 
+    !positions.some(pos => pos?.id === player.id)
+  );
+
+  console.log('Jugadores titulares en BenchPlayers:', positions.filter(pos => pos !== null));
+  console.log('Jugadores en banca:', benchPlayers);
 
   const handlePlayerSwitchClick = (player) => {
+    console.log('Jugador de banca seleccionado:', player);
     setSelectedPlayer(player);
     setModalOpen(true);
   };
 
   const handleConfirmSwitch = (starter) => {
+    console.log('Jugador titular seleccionado:', starter);
     setSelectedStarter(starter);
     setModalOpen(false);
     setShowConfirmation(true);
@@ -29,17 +35,24 @@ const BenchPlayers = ({ team, players, onPlayerSwitch }) => {
 
   const executeSwitch = async () => {
     try {
-      // Aquí es donde necesitamos enviar los datos correctos
+      if (!selectedPlayer?.id || !selectedStarter?.id) {
+        toast.error('Error: Selecciona ambos jugadores para realizar el cambio');
+        return;
+      }
+  
       const substitutionData = {
-        team: team === 'home' ? 'A' : 'B', // Convertir 'home'/'away' a 'A'/'B'
-        player_in: selectedPlayer.id,  // ID del jugador de banca
-        player_out: selectedStarter.id // ID del jugador titular
+        team: team === 'home' ? 'A' : 'B',
+        player_in: selectedPlayer.id,
+        player_out: selectedStarter.id
       };
-
-      await onPlayerSwitch(substitutionData);
-      toast.success('Cambio realizado con éxito');
+  
+      console.log('Enviando datos para sustitución:', substitutionData);
       
-      // Cerrar modal y limpiar estados
+      await matchesService.substitutePlayer(matchId, substitutionData);
+      toast.success('Cambio solicitado con éxito');
+      
+      
+      // Limpiar estados
       setShowConfirmation(false);
       setSelectedPlayer(null);
       setSelectedStarter(null);
@@ -48,7 +61,6 @@ const BenchPlayers = ({ team, players, onPlayerSwitch }) => {
       toast.error('Error al realizar el cambio');
     }
   };
-
 
   if (!benchPlayers || benchPlayers.length === 0) {
     return (
@@ -104,11 +116,12 @@ const BenchPlayers = ({ team, players, onPlayerSwitch }) => {
 
               <button
                 onClick={() => handlePlayerSwitchClick(player)}
+                disabled={isLoading}
                 className={`p-2 rounded-lg transition-colors duration-200 ${
                   isDarkMode 
                     ? 'text-blue-400 hover:bg-gray-700 hover:text-blue-300' 
                     : 'text-purple-600 hover:bg-purple-100'
-                }`}
+                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title="Realizar Cambio"
               >
                 <PiUserSwitchThin className="w-6 h-6" />
@@ -123,12 +136,12 @@ const BenchPlayers = ({ team, players, onPlayerSwitch }) => {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         benchPlayer={selectedPlayer}
-        starters={starters}
+        starters={positions.filter(pos => pos !== null)}
         onConfirmSwitch={handleConfirmSwitch}
       />
 
       {/* Modal de confirmación */}
-      {showConfirmation && (
+      {showConfirmation && selectedPlayer && selectedStarter && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl p-6 w-full max-w-md mx-4`}>
             <h3 className={`text-xl font-bold mb-4 ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>
@@ -137,13 +150,17 @@ const BenchPlayers = ({ team, players, onPlayerSwitch }) => {
             
             <p className={`text-sm mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               ¿Estás seguro de que deseas intercambiar a{' '}
-              <span className="font-semibold">{selectedPlayer?.name}</span> por{' '}
-              <span className="font-semibold">{selectedStarter?.name}</span>?
+              <span className="font-semibold">{selectedPlayer.name}</span> por{' '}
+              <span className="font-semibold">{selectedStarter.name}</span>?
             </p>
 
             <div className="flex justify-end space-x-3">
               <button
-                onClick={() => setShowConfirmation(false)}
+                onClick={() => {
+                  setShowConfirmation(false);
+                  setSelectedPlayer(null);
+                  setSelectedStarter(null);
+                }}
                 className={`px-4 py-2 rounded-lg ${
                   isDarkMode
                     ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
@@ -154,11 +171,12 @@ const BenchPlayers = ({ team, players, onPlayerSwitch }) => {
               </button>
               <button
                 onClick={executeSwitch}
+                disabled={isLoading}
                 className={`px-4 py-2 rounded-lg ${
                   isDarkMode
                     ? 'bg-green-600 hover:bg-green-700'
                     : 'bg-green-500 hover:bg-green-600'
-                } text-white`}
+                } text-white ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 Confirmar Cambio
               </button>

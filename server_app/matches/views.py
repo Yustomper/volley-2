@@ -13,6 +13,7 @@ import requests
 from django.shortcuts import get_object_or_404
 from django.db.models import Sum
 from rest_framework.pagination import PageNumberPagination
+from django.db import transaction
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 6
@@ -260,28 +261,73 @@ class SubstitutePlayerView(APIView):
     def post(self, request, match_id):
         serializer = SubstitutePlayerSerializer(data=request.data)
         if serializer.is_valid():
-            data = serializer.validated_data
-            match = Match.objects.get(id=match_id)
-            current_set = match.sets.last()
+            try:
+                data = serializer.validated_data
+                
+                with transaction.atomic():
+                    match = Match.objects.get(id=match_id)
+                    current_set = match.sets.last()
 
-            if data['team'] == 'A' and current_set.team_a_substitutions < match.max_substitutions_per_set:
-                current_set.team_a_substitutions += 1
-            elif data['team'] == 'B' and current_set.team_b_substitutions < match.max_substitutions_per_set:
-                current_set.team_b_substitutions += 1
-            else:
-                return Response({"error": "Max substitutions reached for this set."}, status=status.HTTP_400_BAD_REQUEST)
+                    # Verificar límites de sustituciones
+                    if data['team'] == 'A' and current_set.team_a_substitutions < match.max_substitutions_per_set:
+                        current_set.team_a_substitutions += 1
+                    elif data['team'] == 'B' and current_set.team_b_substitutions < match.max_substitutions_per_set:
+                        current_set.team_b_substitutions += 1
+                    else:
+                        return Response(
+                            {"error": "Max substitutions reached for this set."}, 
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
 
-            player_in = Player.objects.get(id=data['player_in'])
-            player_out = Player.objects.get(id=data['player_out'])
-            player_in.is_starter, player_out.is_starter = True, False
-            player_in.save()
-            player_out.save()
-            current_set.save()
+                    # Obtener y actualizar jugadores
+                    player_in = Player.objects.get(id=data['player_in'])
+                    player_out = Player.objects.get(id=data['player_out'])
 
-            return Response({"message": "Players substituted successfully."}, status=status.HTTP_200_OK)
+                    # Intercambiar estados
+                    player_in.is_starter = True
+                    player_out.is_starter = False
+
+                    # Guardar todos los cambios
+                    player_in.save()
+                    player_out.save()
+                    current_set.save()
+
+                    print(f"Sustitución realizada: Jugador {player_in.name} entra por {player_out.name}")
+
+                    return Response({
+                        "message": "Players substituted successfully.",
+                        "details": {
+                            "player_in": {
+                                "id": player_in.id,
+                                "name": player_in.name,
+                                "is_starter": True
+                            },
+                            "player_out": {
+                                "id": player_out.id,
+                                "name": player_out.name,
+                                "is_starter": False
+                            }
+                        }
+                    }, status=status.HTTP_200_OK)
+
+            except Match.DoesNotExist:
+                return Response(
+                    {"error": "Match not found."}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            except Player.DoesNotExist:
+                return Response(
+                    {"error": "One or both players not found."}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            except Exception as e:
+                print(f"Error en sustitución: {str(e)}")
+                return Response(
+                    {"error": str(e)}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class TimeoutView(APIView):
     def post(self, request, match_id):

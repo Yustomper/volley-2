@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { RotateCcw } from 'lucide-react';
-import { useTheme } from '../../../context/ThemeContext'; // Ajusta la ruta según tu estructura
+import { useTheme } from '../../../context/ThemeContext';
 import PlayerPosition from './court-control/PlayerPosition';
 import BenchPlayers from './court-control/BenchPlayers';
+import { toast } from 'react-toastify';
 
 const CourtControl = ({
   team,
@@ -12,32 +13,43 @@ const CourtControl = ({
   players = [],
   isMatchStarted = false,
   onPlayerSwitch,
+  matchId,
   onPointScored,
   onScoreDecrement
 }) => {
   const { isDarkMode } = useTheme();
+  const [isLoadingAction, setIsLoadingAction] = useState(false);
 
+  // Filtra jugadores titulares y de banca
+  const starterPlayers = positions.filter(pos => pos !== null);
+  const benchPlayers = players.filter(player =>
+    !starterPlayers.some(starter => starter.id === player.id)
+  );
 
-  const handlePlayerSwitch = async (substitutionData) => {
-    setIsLoadingAction(true);
-    try {
-      await matchesService.substitutePlayer(matchId, substitutionData);
-      toast.success('Cambio realizado con éxito');
-      // Importante: recargar los datos del partido después del cambio
-      await fetchMatchDetails();
-    } catch (error) {
-      console.error('Error en el cambio:', error);
-      toast.error(error.response?.data?.error || 'Error al realizar el cambio');
-    } finally {
-      setIsLoadingAction(false);
-    }
-  };
+  console.log('Titulares en CourtControl:', starterPlayers);
+  console.log('Jugadores en banca:', benchPlayers);
+
   const validPositions = Array.isArray(positions) ?
     positions.slice(0, 6) : Array(6).fill(null);
 
   while (validPositions.length < 6) {
     validPositions.push(null);
   }
+
+  const handlePlayerSwitch = async (substitutionData) => {
+    try {
+      setIsLoadingAction(true);
+      console.log('Datos de sustitución recibidos en CourtControl:', substitutionData);
+      await matchesService.substitutePlayer(matchId, substitutionData); // Utiliza matchId directamente
+      // Recargar los datos del partido después de la sustitución
+      // (puedes agregar una función para esto)
+    } catch (error) {
+      console.error('Error en el cambio:', error);
+      toast.error('Error al realizar el cambio');
+    } finally {
+      setIsLoadingAction(false);
+    }
+  };
 
   return (
     <div className={`w-full max-w-lg mx-auto ${isDarkMode ? 'bg-gray-800/50' : 'bg-white'} backdrop-blur-sm rounded-xl p-6 shadow-xl`}>
@@ -70,7 +82,6 @@ const CourtControl = ({
                 index={idx}
                 team={team}
                 isMatchStarted={isMatchStarted}
-                onPlayerSwitch={onPlayerSwitch}
                 onPointScored={onPointScored}
               />
             ))}
@@ -85,7 +96,6 @@ const CourtControl = ({
                 index={idx + 3}
                 team={team}
                 isMatchStarted={isMatchStarted}
-                onPlayerSwitch={onPlayerSwitch}
                 onPointScored={onPointScored}
               />
             ))}
@@ -113,9 +123,13 @@ const CourtControl = ({
       {/* Jugadores en Banca */}
       <div className={`mt-6 pt-6 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <BenchPlayers
-          team={team} // 'home' o 'away'
+          team={team}
           players={players}
+          starters={starterPlayers}
           onPlayerSwitch={handlePlayerSwitch}
+          isLoading={isLoadingAction}
+          positions={validPositions}
+          matchId={matchId} // Pasa el matchId como prop
         />
       </div>
     </div>
