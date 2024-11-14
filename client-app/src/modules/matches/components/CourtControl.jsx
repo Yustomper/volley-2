@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import PlayerPosition from './court-control/PlayerPosition';
 import BenchPlayers from './court-control/BenchPlayers';
 import { toast } from 'react-toastify';
+import matchesService from '../services/matchesService';
 
 const CourtControl = ({
   team,
@@ -19,18 +20,23 @@ const CourtControl = ({
 }) => {
   const { isDarkMode } = useTheme();
   const [isLoadingAction, setIsLoadingAction] = useState(false);
+  const [localPositions, setLocalPositions] = useState(positions);
+
+  useEffect(() => {
+    setLocalPositions(positions);
+  }, [positions]);
 
   // Filtra jugadores titulares y de banca
-  const starterPlayers = positions.filter(pos => pos !== null);
+  const starterPlayers = localPositions.filter(pos => pos !== null);
   const benchPlayers = players.filter(player =>
-    !starterPlayers.some(starter => starter.id === player.id)
+    !starterPlayers.some(starter => starter?.id === player.id)
   );
 
   console.log('Titulares en CourtControl:', starterPlayers);
   console.log('Jugadores en banca:', benchPlayers);
 
-  const validPositions = Array.isArray(positions) ?
-    positions.slice(0, 6) : Array(6).fill(null);
+  const validPositions = Array.isArray(localPositions) ?
+    localPositions.slice(0, 6) : Array(6).fill(null);
 
   while (validPositions.length < 6) {
     validPositions.push(null);
@@ -39,17 +45,45 @@ const CourtControl = ({
   const handlePlayerSwitch = async (substitutionData) => {
     try {
       setIsLoadingAction(true);
-      console.log('Datos de sustitución recibidos en CourtControl:', substitutionData);
-      await matchesService.substitutePlayer(matchId, substitutionData); // Utiliza matchId directamente
-      // Recargar los datos del partido después de la sustitución
-      // (puedes agregar una función para esto)
+      const { playerIn, playerOut } = substitutionData;
+
+      // Encontrar el índice del jugador que sale
+      const positionIndex = localPositions.findIndex(pos => pos?.id === playerOut.id);
+
+      if (positionIndex === -1) {
+        throw new Error('Posición no encontrada');
+      }
+
+      // Crear nueva lista de posiciones manteniendo el orden
+      const newPositions = [...localPositions];
+      newPositions[positionIndex] = {
+        ...playerIn,
+        is_starter: true,
+        courtIndex: positionIndex // Mantener el índice de la posición
+      };
+
+      // Actualizar estado local inmediatamente
+      setLocalPositions(newPositions);
+
+      // Llamar al servicio de sustitución
+      await matchesService.substitutePlayer(matchId, {
+        team: team === 'home' ? 'A' : 'B',
+        player_in: playerIn.id,
+        player_out: playerOut.id,
+        position_index: positionIndex
+      });
+
+      toast.success('Cambio realizado con éxito');
     } catch (error) {
       console.error('Error en el cambio:', error);
       toast.error('Error al realizar el cambio');
+      // Revertir cambios en caso de error
+      setLocalPositions(positions);
     } finally {
       setIsLoadingAction(false);
     }
   };
+
 
   return (
     <div className={`w-full max-w-lg mx-auto ${isDarkMode ? 'bg-gray-800/50' : 'bg-white'} backdrop-blur-sm rounded-xl p-6 shadow-xl`}>
@@ -75,7 +109,7 @@ const CourtControl = ({
         <div className="relative w-full h-full grid gap-y-8">
           {/* Delanteros */}
           <div className="grid grid-cols-3 gap-x-6">
-            {validPositions.slice(0, 3).map((position, idx) => (
+            {localPositions.slice(0, 3).map((position, idx) => (
               <PlayerPosition
                 key={`${team}-front-${idx}`}
                 position={position}
@@ -89,7 +123,7 @@ const CourtControl = ({
 
           {/* Zagueros */}
           <div className="grid grid-cols-3 gap-x-6">
-            {validPositions.slice(3).map((position, idx) => (
+            {localPositions.slice(3, 6).map((position, idx) => (
               <PlayerPosition
                 key={`${team}-back-${idx}`}
                 position={position}
@@ -128,8 +162,8 @@ const CourtControl = ({
           starters={starterPlayers}
           onPlayerSwitch={handlePlayerSwitch}
           isLoading={isLoadingAction}
-          positions={validPositions}
-          matchId={matchId} // Pasa el matchId como prop
+          positions={localPositions}
+          matchId={matchId}
         />
       </div>
     </div>

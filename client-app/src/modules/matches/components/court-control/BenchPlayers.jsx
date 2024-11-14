@@ -39,18 +39,16 @@ const BenchPlayers = ({ team, players, starters, onPlayerSwitch, isLoading, posi
         toast.error('Error: Selecciona ambos jugadores para realizar el cambio');
         return;
       }
-  
+
       const substitutionData = {
-        team: team === 'home' ? 'A' : 'B',
-        player_in: selectedPlayer.id,
-        player_out: selectedStarter.id
+        playerIn: {
+          ...selectedPlayer,
+          position: selectedStarter.position // Mantener la posición del titular
+        },
+        playerOut: selectedStarter
       };
-  
-      console.log('Enviando datos para sustitución:', substitutionData);
-      
-      await matchesService.substitutePlayer(matchId, substitutionData);
-      toast.success('Cambio solicitado con éxito');
-      
+
+      await onPlayerSwitch(substitutionData);
       
       // Limpiar estados
       setShowConfirmation(false);
