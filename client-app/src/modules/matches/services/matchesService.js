@@ -69,8 +69,9 @@ const matchesApi = {
     }
   },
   // Registrar tiempo fuera
-  registerTimeout: (matchId, timeoutData) =>
-    api.post(`/api/matches/${matchId}/timeout/`, timeoutData),
+  requestTimeout: async (matchId, data) => {
+    return await api.post(`/api/matches/${matchId}/timeout/`, data);
+  },
 
   // Iniciar un partido
   startMatch: (matchId) => api.post(`/api/matches/${matchId}/start/`),

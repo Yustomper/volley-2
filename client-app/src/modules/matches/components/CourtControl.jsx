@@ -3,6 +3,7 @@ import { RotateCcw } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import PlayerPosition from './court-control/PlayerPosition';
 import BenchPlayers from './court-control/BenchPlayers';
+import TimeoutControl from './court-control/TimeoutControl';
 import { toast } from 'react-toastify';
 import matchesService from '../services/matchesService';
 
@@ -16,7 +17,8 @@ const CourtControl = ({
   onPlayerSwitch,
   matchId,
   onPointScored,
-  onScoreDecrement
+  onScoreDecrement,
+  timeoutsUsed = 0
 }) => {
   const { isDarkMode } = useTheme();
   const [isLoadingAction, setIsLoadingAction] = useState(false);
@@ -84,11 +86,20 @@ const CourtControl = ({
     }
   };
 
-
   return (
     <div className={`w-full max-w-lg mx-auto ${isDarkMode ? 'bg-gray-800/50' : 'bg-white'} backdrop-blur-sm rounded-xl p-6 shadow-xl`}>
       {/* Header del Equipo */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-6 relative">
+        <div className="absolute right-2 top-2">
+          <TimeoutControl
+            team={team}
+            matchId={matchId}
+            timeoutsUsed={timeoutsUsed}
+            maxTimeouts={2}
+            isMatchStarted={isMatchStarted}
+            isDarkMode={isDarkMode}
+          />
+        </div>
         <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>
           {teamName}
         </h3>

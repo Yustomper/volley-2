@@ -28,7 +28,9 @@ const MatchControl = () => {
     current_set_started: false,
     sets: [],
     team_a_sets_won: 0,
-    team_b_sets_won: 0
+    team_b_sets_won: 0,
+    team_a_timeouts: 0,  // Ya existe en tu respuesta del backend
+    team_b_timeouts: 0,  // Ya existe en tu respuesta del backend
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -354,15 +356,17 @@ const MatchControl = () => {
             {/* Equipo Local */}
             <div className="md:col-span-1">
               <CourtControl
-                team="home"  // o "away" dependiendo del equipo
+                team="home"
                 teamName={match.home_team.name}
                 score={getCurrentSetScores().team_a}
                 positions={match.home_positions}
                 players={match.home_team.players}
                 isMatchStarted={match.status === 'live'}
-                onPlayerSwitch={handlePlayerSwitch}
+                onPlayerSwitch={{ matchId, handlePlayerSwitch }}
+                matchId={matchId}
                 onPointScored={handleAddPoint}
                 onScoreDecrement={() => handleRevertPoint('home')}
+                timeoutsUsed={match.team_a_timeouts} // Agregar esta línea
               />
             </div>
 
@@ -430,6 +434,7 @@ const MatchControl = () => {
                 onPlayerSwitch={{ matchId, handlePlayerSwitch }}
                 onPointScored={handleAddPoint}
                 onScoreDecrement={() => handleRevertPoint('home')}
+                timeoutsUsed={match.team_b_timeouts} 
               />
             </div>
           </div>
