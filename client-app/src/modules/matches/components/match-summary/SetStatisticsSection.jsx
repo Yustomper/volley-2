@@ -1,8 +1,10 @@
-// client-app/src/modules/matches/components/match-summary/SetStatisticsSection.jsx
-
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChartBar } from 'lucide-react';
 
-const SetStatisticsSection = ({ sets }) => {
+const SetStatisticsSection = ({ sets, matchId }) => {
+  const navigate = useNavigate();
+
   if (!sets || sets.length === 0) {
     return (
       <div className="text-center text-gray-500 dark:text-gray-400 py-8">
@@ -36,6 +38,15 @@ const SetStatisticsSection = ({ sets }) => {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="mt-4 flex justify-center">
+          <button
+            onClick={() => navigate(`/match-results/${matchId}`)}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200"
+          >
+            <ChartBar size={20} />
+            Ver Detalles Completos
+          </button>
         </div>
       </div>
     </div>

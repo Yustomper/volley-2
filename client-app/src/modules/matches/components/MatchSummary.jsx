@@ -35,16 +35,18 @@ const MatchSummary = ({ match, refreshMatchData }) => {
     setIsEditing(!isEditing);
   };
 
-  
+
   return (
     <div>
-       <TeamShowSection
+      <TeamShowSection
         match={match}
         weather={match.weather_info}
         refreshMatchData={refreshMatchData}
         onEdit={toggleEdit}
       />
-      <SetStatisticsSection sets={match.sets} />
+      <SetStatisticsSection
+        matchId={match.id}
+        sets={match.sets} />
     </div>
   );
 };

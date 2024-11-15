@@ -1,5 +1,3 @@
-// src/modules/team/services/teamService.js
-
 import api from "../../auth/services/api";
 
 const teamApi = {
@@ -8,6 +6,8 @@ const teamApi = {
   updateTeam: (teamId, teamData) => api.put(`/api/teams/${teamId}/`, teamData),
   deleteTeam: (teamId) => api.delete(`/api/teams/${teamId}/`),
 
+  compareTeams: (team1Id, team2Id) => api.get(`/api/compare/${team1Id}/${team2Id}/`),
+  
   // Para casos donde necesitemos gestionar jugadores individualmente
   getPlayers: (params) => api.get(`/api/players/`, { params }),
   deletePlayer: (playerId) => api.delete(`/api/players/${playerId}/`),
