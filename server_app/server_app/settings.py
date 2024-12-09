@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'django_filters',
+    'drf_spectacular',
     # Las apps que crearemos para el proyecto
     'users',
     'teams',
@@ -69,6 +70,18 @@ if not ALLOWED_HOSTS:
         "Los ALLOWED_HOSTS no están configurados correctamente en las variables de entorno.")
 
 
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Volleyball API',
+    'DESCRIPTION': 'API para gestión de equipos y jugadores de voleibol',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'TAGS': [
+        {'name': 'Teams', 'description': 'Operaciones con equipos'},
+        {'name': 'Players', 'description': 'Operaciones con jugadores'},
+    ],
+}
+
+
 # settings.py
 
 REST_FRAMEWORK = {
@@ -80,6 +93,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 APPEND_SLASH = False

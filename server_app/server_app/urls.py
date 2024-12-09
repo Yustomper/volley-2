@@ -9,4 +9,5 @@ urlpatterns = [
     path('api/', include('teams.urls')),
     path('api/', include('tournaments.urls')),
     path('api/', include('matches.urls')),
+    path('api/', include('docs.urls')),
 ]
