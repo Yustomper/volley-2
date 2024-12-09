@@ -140,10 +140,10 @@ DATABASES = {
         'USER': os.getenv('PGUSER'),
         'PASSWORD': os.getenv('PGPASSWORD'),
         'HOST': os.getenv('PGHOST'),
-        'PORT': os.getenv('PGPORT'),
-        # 'OPTIONS': {
-        #     'sslmode': 'require',
-        # },
+        'PORT': os.getenv('PGPORT', 5432),
+        'OPTIONS': {
+            'sslmode': 'require',
+        },
         'DISABLE_SERVER_SIDE_CURSORS': True,
     }
 }
@@ -151,6 +151,7 @@ DATABASES = {
 if not all([DATABASES['default']['NAME'], DATABASES['default']['USER'], DATABASES['default']['PASSWORD'], DATABASES['default']['HOST']]):
     raise ValueError(
         "La configuración de la base de datos no está completa en las variables de entorno.")
+
 
 
 # Password validation
