@@ -19,7 +19,7 @@ import Register from './modules/auth/pages/Register';
 import NotFound from './components/NotFound';
 import MatchControl from './modules/matches/pages/MatchControl';
 import MatchResults from './modules/matches/pages/MatchResults';
-import Teamprediction from './pages/Teamprediction';
+import Prediction from './pages/Prediction';
 
 
 function App() {
@@ -37,7 +37,7 @@ function App() {
                 <Route path="/team" element={<Team />} />
                 <Route path="/matches" element={<Matches />} />
                 <Route path="/match-details/:matchId" element={<MatchDetails />} />
-                <Route path="/statistics" element={<Teamprediction />} />
+                <Route path="/statistics" element={<Prediction />} />
                 <Route path="/live-scoreboard/:matchId" element={<LiveScoreBoard />} />
                 <Route path="/volleyball/:matchId" element={<MatchControl />} />
                 <Route path="/match-results/:matchId" element={<MatchResults />} />
