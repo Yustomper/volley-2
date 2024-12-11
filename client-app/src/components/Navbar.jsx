@@ -71,7 +71,7 @@ const Navbar = () => {
               )}
               {token ? (
                 <>
-                  <Link to="/equipos" className="block px-3 py-2 rounded-md text-sm font-medium">Equipos</Link>
+                  <Link to="/team" className="block px-3 py-2 rounded-md text-sm font-medium">Equipos</Link>
                   <Link to="/matches" className="block px-3 py-2 rounded-md text-sm font-medium">Partidos</Link>
                   <Link to="/statistics" className="block px-3 py-2 rounded-md text-sm font-medium">Estadísticas</Link>
                   <button onClick={logout} className="block w-full text-left px-3 py-2 rounded-md text-sm font-medium">Cerrar sesión</button>
