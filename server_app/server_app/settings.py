@@ -12,24 +12,20 @@ load_dotenv()
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 if not SECRET_KEY:
-    raise ValueError(
-        "El SECRET_KEY no está configurado en las variables de entorno.")
+    raise ValueError("El SECRET_KEY no está configurado en las variables de entorno.")
+
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 if not ALLOWED_HOSTS:
-    raise ValueError(
-        "Los ALLOWED_HOSTS no están configurados correctamente en las variables de entorno.")
-
+    raise ValueError("Los ALLOWED_HOSTS no están configurados correctamente en las variables de entorno.")
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -37,18 +33,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Otras apps de Django
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
     'django_filters',
     'drf_spectacular',
-    # Las apps que crearemos para el proyecto
     'users',
     'teams',
     'tournaments',
     'matches',
-
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -57,18 +50,8 @@ CORS_ALLOW_CREDENTIALS = True
 # Configuración de CORS
 CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 
-if not CORS_ALLOWED_ORIGINS[0]:
-    raise ValueError(
-        "CORS_ALLOWED_ORIGINS no está configurado en las variables de entorno.")
-
-
-# Agrega tus dominios permitidos
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
-
-if not ALLOWED_HOSTS:
-    raise ValueError(
-        "Los ALLOWED_HOSTS no están configurados correctamente en las variables de entorno.")
-
+if not CORS_ALLOWED_ORIGINS:
+    raise ValueError("CORS_ALLOWED_ORIGINS no está configurado en las variables de entorno.")
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Volleyball API',
@@ -80,9 +63,6 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Players', 'description': 'Operaciones con jugadores'},
     ],
 }
-
-
-# settings.py
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -129,7 +109,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'server_app.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
@@ -149,10 +128,7 @@ DATABASES = {
 }
 
 if not all([DATABASES['default']['NAME'], DATABASES['default']['USER'], DATABASES['default']['PASSWORD'], DATABASES['default']['HOST']]):
-    raise ValueError(
-        "La configuración de la base de datos no está completa en las variables de entorno.")
-
-
+    raise ValueError("La configuración de la base de datos no está completa en las variables de entorno.")
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -174,7 +150,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
@@ -185,7 +160,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
