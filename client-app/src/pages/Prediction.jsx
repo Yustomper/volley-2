@@ -1,3 +1,4 @@
+// TeamPrediction.js
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart2 } from 'lucide-react';
@@ -78,11 +79,11 @@ const TeamPrediction = () => {
   // Pantalla inicial
   if (!comparisonData) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-8 flex flex-col items-center justify-center">
+      <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'} p-8 flex flex-col items-center justify-center`}>
         <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-purple-400 to-orange-500 bg-clip-text text-transparent">
           Predicción de Encuentros
         </h1>
-        <p className="text-gray-400 mb-8 text-center max-w-2xl">
+        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-700'} mb-8 text-center max-w-2xl`}>
           Selecciona dos equipos para obtener un análisis estadístico y una predicción
           basada en su rendimiento.
         </p>
@@ -109,21 +110,21 @@ const TeamPrediction = () => {
 
   // Visualización de la comparación
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'} p-8`}>
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-orange-500 bg-clip-text text-transparent">
             Análisis Predictivo
           </h1>
-          <p className="text-gray-400 mt-2">Comparación estadística y predicción de rendimiento</p>
+          <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-700'} mt-2`}>Comparación estadística y predicción de rendimiento</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-7 gap-8 mb-12">
           {/* Team 1 */}
-          <div className="md:col-span-3 bg-gray-800 rounded-2xl p-6 shadow-xl">
+          <div className={`md:col-span-3 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 shadow-xl`}>
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-purple-400">{comparisonData.teams.team1.name}</h2>
-              <div className="text-sm text-gray-400 mt-2">
+              <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-purple-400' : 'text-orange-400'}`}>{comparisonData.teams.team1.name}</h2>
+              <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-700'} mt-2`}>
                 {comparisonData.teams.team1.totalMatches} partidos jugados
               </div>
             </div>
@@ -132,9 +133,9 @@ const TeamPrediction = () => {
                 <div key={stat}>
                   <div className="flex justify-between mb-2">
                     <span className="capitalize">{stat}</span>
-                    <span className="text-purple-400">{value}%</span>
+                    <span className={`${isDarkMode ? 'text-purple-400' : 'text-orange-400'}`}>{value}%</span>
                   </div>
-                  <StatBar value={value} color="bg-purple-500" />
+                  <StatBar value={value} color={`${isDarkMode ? 'bg-purple-500' : 'bg-orange-500'}`} />
                 </div>
               ))}
             </div>
@@ -148,10 +149,10 @@ const TeamPrediction = () => {
           </div>
 
           {/* Team 2 */}
-          <div className="md:col-span-3 bg-gray-800 rounded-2xl p-6 shadow-xl">
+          <div className={`md:col-span-3 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 shadow-xl`}>
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-orange-400">{comparisonData.teams.team2.name}</h2>
-              <div className="text-sm text-gray-400 mt-2">
+              <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-orange-400' : 'text-purple-400'}`}>{comparisonData.teams.team2.name}</h2>
+              <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-700'} mt-2`}>
                 {comparisonData.teams.team2.totalMatches} partidos jugados
               </div>
             </div>
@@ -160,9 +161,9 @@ const TeamPrediction = () => {
                 <div key={stat}>
                   <div className="flex justify-between mb-2">
                     <span className="capitalize">{stat}</span>
-                    <span className="text-orange-400">{value}%</span>
+                    <span className={`${isDarkMode ? 'text-orange-400' : 'text-purple-400'}`}>{value}%</span>
                   </div>
-                  <StatBar value={value} color="bg-orange-500" />
+                  <StatBar value={value} color={`${isDarkMode ? 'bg-orange-500' : 'bg-purple-500'}`} />
                 </div>
               ))}
             </div>
@@ -170,7 +171,7 @@ const TeamPrediction = () => {
         </div>
 
         {/* Prediction Section */}
-        <div className="bg-gray-800 rounded-2xl p-8 mb-12">
+        <div className={`bg-gray-800 rounded-2xl p-8 mb-12 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-xl` }>
           <h2 className="text-2xl font-bold mb-6 text-center">Predicción de Victoria</h2>
           <div className="flex items-center justify-center mb-8">
             <div className="w-full max-w-3xl bg-gray-700 rounded-full h-4 overflow-hidden">
@@ -183,8 +184,8 @@ const TeamPrediction = () => {
             </div>
           </div>
           <div className="flex justify-between text-xl font-bold">
-            <span className="text-purple-400">{comparisonData.prediction.team1}%</span>
-            <span className="text-orange-400">{comparisonData.prediction.team2}%</span>
+            <span className={`${isDarkMode ? 'text-purple-400' : 'text-orange-400'}`}>{comparisonData.prediction.team1}%</span>
+            <span className={`${isDarkMode ? 'text-orange-400' : 'text-purple-400'}`}>{comparisonData.prediction.team2}%</span>
           </div>
         </div>
 
@@ -196,7 +197,7 @@ const TeamPrediction = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-gray-800 rounded-xl p-6 shadow-lg"
+              className={`bg-gray-800 rounded-xl p-6 shadow-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
             >
               <h3 className="text-lg font-semibold mb-3">{factor.name}</h3>
               <div className={`text-sm ${
