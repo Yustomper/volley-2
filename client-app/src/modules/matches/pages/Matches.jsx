@@ -177,13 +177,17 @@ const Matches = () => {
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-100 text-gray-900'}`}>
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className={`text-4xl font-bold ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>Partidos</h1>
-          <div className="flex gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+          <h1 className={`text-4xl font-bold text-center md:text-left ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>
+            Partidos
+          </h1>
+          
+          {/* Flex column para móviles, flex-row para pantallas grandes */}
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mt-4 sm:mt-0">
             <button
               onClick={() => setIsTournamentModalOpen(true)}
               className={`${isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-orange-500 hover:bg-orange-600'} 
-                text-white px-6 py-3 rounded-full transition duration-300 flex items-center`}
+                text-white px-6 py-3 rounded-full transition duration-300 flex items-center justify-center`}
             >
               <Plus className="w-5 h-5 mr-2" />
               Crear Torneo
@@ -191,14 +195,14 @@ const Matches = () => {
             <button
               onClick={() => setIsModalOpen(true)}
               className={`${isDarkMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-orange-500 hover:bg-orange-600'} 
-                text-white px-6 py-3 rounded-full transition duration-300 flex items-center`}
+                text-white px-6 py-3 rounded-full transition duration-300 flex items-center justify-center`}
             >
               <Plus className="w-5 h-5 mr-2" />
               Crear Partido
             </button>
           </div>
         </div>
-
+  
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div className="relative w-full md:w-96">
             <input
@@ -219,9 +223,9 @@ const Matches = () => {
             Ordenar: {sortOrder === 'asc' ? 'A-Z' : 'Z-A'}
           </button>
         </div>
-
+  
         {renderMatchesList()}
-
+  
         {totalPages > 1 && (
           <div className="mt-8 flex justify-center items-center space-x-4">
             <button
@@ -247,20 +251,20 @@ const Matches = () => {
             </button>
           </div>
         )}
-        
-         {/* Modales */}
-         <MatchFormModal 
+  
+        {/* Modales */}
+        <MatchFormModal 
           open={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onSubmit={handleMatchSubmit}
         />
-
+  
         <ModalTournament
           open={isTournamentModalOpen}
           onClose={() => setIsTournamentModalOpen(false)}
           onSubmit={handleTournamentSubmit}
         />
-
+  
         <ToastContainer 
           position="bottom-right"
           autoClose={5000}
@@ -276,6 +280,8 @@ const Matches = () => {
       </div>
     </div>
   );
+  
+  
 };
 
 const MatchSkeleton = ({ isDarkMode }) => (
