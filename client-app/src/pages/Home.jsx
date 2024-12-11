@@ -25,28 +25,45 @@ const Home = () => {
     <div className={`min-h-screen flex flex-col ${isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'}`}>
       
       {/* Encabezado con versiones para dark y light */}
-      <header className={`w-full py-12 text-center ${isDarkMode ? 'bg-gradient-to-r from-purple-500 to-purple-800' : 'bg-gradient-to-r from-orange-500 to-orange-600'}`}>
-        <h1 className="text-6xl font-extrabold text-white tracking-tight mb-4">
-          Bienvenido a tu Plataforma de Voleibol
-        </h1>
-        <p className="text-lg text-white opacity-90">
-          Gestiona equipos, organiza partidos y lleva tu pasión por el voleibol al siguiente nivel.
-        </p>
-      </header>
+      <header className="w-full py-12">
+          <div
+            className={`max-w-7xl mx-auto py-12 px-12 rounded-lg ${
+              isDarkMode
+                ? 'bg-gradient-to-r from-purple-500 to-purple-800'
+                : 'bg-gradient-to-r from-orange-500 to-orange-600'
+            }`}
+          >
+            <div className="text-center">
+              <h1 className="text-6xl font-extrabold text-white tracking-tight mb-4">
+                Bienvenido a tu Plataforma de Voleibol
+              </h1>
+              <p className="text-lg text-white opacity-90">
+                Gestiona equipos, organiza partidos y lleva tu pasión por el voleibol al siguiente nivel.
+              </p>
+            </div>
+          </div>
+        </header>
+
 
       {/* Sección de contenido principal */}
       <main className="flex-1 container mx-auto px-6 py-12">
         {/* Información sobre la plataforma */}
+        <div className="max-w-7xl mx-auto">
+    
         <section className="grid md:grid-cols-2 gap-12 mb-16">
           <div className={`p-8 rounded-xl shadow-md ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-            <h2 className={`text-4xl font-bold mb-4 ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>El deporte del Voleibol</h2>
+            <h2 className={`text-4xl font-bold mb-4 ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>
+              El deporte del Voleibol
+            </h2>
             <p className={`text-lg leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               El voleibol es una disciplina de equipo que promueve la cooperación, la estrategia y la velocidad. 
               En nuestra plataforma, te ofrecemos todas las herramientas necesarias para gestionar tus equipos y disfrutar del juego.
             </p>
           </div>
           <div className={`p-8 rounded-xl shadow-md ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-            <h2 className={`text-4xl font-bold mb-4 ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>Crea y Gestiona tus Equipos</h2>
+            <h2 className={`text-4xl font-bold mb-4 ${isDarkMode ? 'text-purple-400' : 'text-orange-600'}`}>
+              Crea y Gestiona tus Equipos
+            </h2>
             <p className={`text-lg leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               Con nuestra plataforma, puedes crear, gestionar y llevar el control de tus equipos de voleibol, asignar jugadores, establecer posiciones, y mucho más.
               Prepárate para la acción dentro y fuera de la cancha.
@@ -59,6 +76,7 @@ const Home = () => {
             </Link>
           </div>
         </section>
+    
 
         {/* Carrusel de imágenes */}
         <section className="mb-16">
@@ -98,8 +116,9 @@ const Home = () => {
             Crear Partido Ahora
           </Link>
         </section>
+        </div>
       </main>
-
+     
       {/* Footer simple */}
       <footer className="py-8 text-center">
         <p className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-700'}`}>
